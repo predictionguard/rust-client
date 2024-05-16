@@ -95,7 +95,7 @@ pub struct Response {
     pub choices: Option<Vec<Choice>>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub enum Roles {
     #[serde(rename = "system")]
     System,

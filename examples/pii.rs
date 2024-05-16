@@ -11,12 +11,12 @@ async fn main() {
     let clt = client::Client::new(&host, &key).expect("client value");
 
     let req = pii::Request {
-        prompt: "George Washington was president of the us".to_string(),
+        prompt: "My email is joe@gmail.com and my number is 270-123-4567".to_string(),
         replace: true,
         replace_method: pii::ReplaceMethod::Random,
     };
 
-    let result = clt.pii(&req).await.expect("error from injection");
+    let result = clt.pii(&req).await.expect("error from pii");
 
-    println!("\n\npii response:\n\n{:?}", result);
+    println!("\n\npii response:\n{:?}\n\n", result);
 }

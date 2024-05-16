@@ -33,7 +33,7 @@ async fn main() {
     let result = clt
         .generate_chat_completion_stream(req, &mut callback)
         .await
-        .expect("error from generate chat completion");
+        .expect("error from chat_events");
 
-    println!("\n\nchat sse completion response:\n{:?}", result);
+    println!("\n\nchat sse completion response:\n{:?}\n\n", result);
 }

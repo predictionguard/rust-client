@@ -17,5 +17,5 @@ async fn main() {
 
     let result = clt.injection(&req).await.expect("error from injection");
 
-    println!("\n\ninjection response:\n\n{:?}", result);
+    println!("\n\ninjection response:\n{:?}\n\n", result);
 }

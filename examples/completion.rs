@@ -11,8 +11,8 @@ async fn main() {
     let clt = client::Client::new(&host, &key).expect("client value");
 
     let req = completion::Request {
-        model: completion::Models::NousHermesLlama213B,
-        prompt: "The interesting things in US history happened when".to_string(),
+        model: completion::Models::NeuralChat7B,
+        prompt: "Will I lose my hair?".to_string(),
     };
 
     let result = clt

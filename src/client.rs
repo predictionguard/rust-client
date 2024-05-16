@@ -136,7 +136,6 @@ impl Client {
     where
         F: FnMut(&String),
     {
-        //add channel
         let url = format!("{}{}", &self.inner.server, completion::CHAT_PATH);
 
         req.stream = true;

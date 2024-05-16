@@ -14,9 +14,9 @@ async fn main() {
         model: completion::Models::NeuralChat7B,
         messages: vec![completion::Message {
             role: completion::Roles::User,
-            content: "How do you feel about the president?".to_string(),
+            content: "How do you feel about the world in general?".to_string(),
         }],
-        max_tokens: 250,
+        max_tokens: 1000,
         temperature: 1.1,
     };
 

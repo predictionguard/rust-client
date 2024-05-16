@@ -15,16 +15,16 @@ pub struct Request {
 pub struct Response {
     pub id: Option<String>,
     pub object: Option<String>,
-    pub created: Option<String>,
+    pub created: i64,
     pub best_translation: Option<String>,
-    pub best_score: Option<String>,
+    pub best_score: f64,
     pub best_translation_model: Option<String>,
-    pub transalations: Option<Vec<Translation>>,
+    pub translations: Option<Vec<Translation>>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Translation {
-    pub score: Option<f64>,
+    pub score: f64,
     pub translation: Option<String>,
     pub model: Option<String>,
     pub status: Option<String>,
