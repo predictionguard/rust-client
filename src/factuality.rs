@@ -1,13 +1,17 @@
+//! Data types that are used for the factuality endpoints.
 use serde::{Deserialize, Serialize};
 
+/// Path to the factuality endpoint.
 pub static PATH: &str = "/factuality";
 
+/// Request type for the factuality endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Request {
     pub reference: String,
     pub text: String,
 }
 
+/// Response type for the factuality endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Response {
     pub id: Option<String>,
@@ -16,6 +20,7 @@ pub struct Response {
     pub checks: Option<Vec<Check>>,
 }
 
+/// Represents an individual check in the factuality Response.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Check {
     pub score: f64,

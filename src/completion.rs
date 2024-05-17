@@ -1,8 +1,14 @@
+//! Data types that are used for the completion endpoints, including chat and chat
+//! streaming.
 use serde::{self, de::Deserializer, Deserialize, Serialize, Serializer};
 
+/// Path to the completions endpoint.
 pub static PATH: &str = "/completions";
+
+/// Path to the completions chat endpoint.
 pub static CHAT_PATH: &str = "/chat/completions";
 
+/// Used to send a completion request for chat.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ChatRequest {
     #[serde(deserialize_with = "deserialize_models")]
@@ -12,18 +18,21 @@ pub struct ChatRequest {
     pub temperature: f64,
 }
 
+/// Represents a message in the chat response.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Message {
     pub role: Roles,
     pub content: String,
 }
 
+/// Represents a choice in the chat response.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ChatChoice {
     pub message: Message,
     pub index: i64,
 }
 
+/// Reponse returned from the completion response for chat.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ChatResponse {
     pub id: Option<String>,
@@ -35,11 +44,14 @@ pub struct ChatResponse {
 }
 
 //********************
+
+/// Represents the content that is streamed in a chat events reponse.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ChatEventsDelta {
     pub content: Option<String>,
 }
 
+/// Represents the choices in a chat events response.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ChatChoiceEvents {
     pub generated_text: Option<String>,
@@ -49,6 +61,7 @@ pub struct ChatChoiceEvents {
     pub delta: Option<ChatEventsDelta>,
 }
 
+/// Completion response returned from the chat events endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ChatResponseEvents {
     pub id: Option<String>,
@@ -59,6 +72,7 @@ pub struct ChatResponseEvents {
     pub choices: Option<Vec<ChatChoiceEvents>>,
 }
 
+/// Completion request for chat events endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ChatRequestEvents {
     #[serde(deserialize_with = "deserialize_models")]
@@ -71,6 +85,7 @@ pub struct ChatRequestEvents {
 
 //********************
 
+/// Completion request for the base completion endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Request {
     #[serde(deserialize_with = "deserialize_models")]
@@ -78,6 +93,7 @@ pub struct Request {
     pub prompt: String,
 }
 
+/// Represents a choice in the base completion response.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Choice {
     pub text: String,
@@ -87,6 +103,7 @@ pub struct Choice {
     pub model: Models,
 }
 
+/// Completion response for the base completetion endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Response {
     pub id: Option<String>,
@@ -95,6 +112,7 @@ pub struct Response {
     pub choices: Option<Vec<Choice>>,
 }
 
+/// The different role types for chat requests/respones.
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub enum Roles {
     #[serde(rename = "system")]
@@ -105,6 +123,7 @@ pub enum Roles {
     Assistant,
 }
 
+/// The different models that can be used in the completion endpoints.
 #[derive(Debug, PartialEq)]
 pub enum Models {
     MetaLlama38BInstruct,

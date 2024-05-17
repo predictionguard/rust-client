@@ -1,7 +1,10 @@
+//! Data types used for the injection endpoint.
 use serde::{Deserialize, Serialize};
 
+/// Path to the injection endpoint.
 pub static PATH: &str = "/injection";
 
+/// Represents an individual check on the injection endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Check {
     pub probability: f64,
@@ -9,12 +12,14 @@ pub struct Check {
     pub status: String,
 }
 
+/// Request type for the injection endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Request {
     pub prompt: String,
     pub detect: bool,
 }
 
+/// Response type for the injection endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Response {
     pub id: Option<String>,

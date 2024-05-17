@@ -1,7 +1,10 @@
+//! Data types used for the translate endpoint.
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+/// Path to the translate endpoint.
 pub static PATH: &str = "/translate";
 
+/// Request type used for the translate endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Request {
     pub text: String,
@@ -11,6 +14,7 @@ pub struct Request {
     pub target_lang: Language,
 }
 
+/// Response type used for the translate endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Response {
     pub id: Option<String>,
@@ -22,6 +26,7 @@ pub struct Response {
     pub translations: Option<Vec<Translation>>,
 }
 
+/// Represents an individual translation from the translate endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Translation {
     pub score: f64,
@@ -30,6 +35,7 @@ pub struct Translation {
     pub status: Option<String>,
 }
 
+/// Languages supported by the translate endpoint.
 #[derive(Debug, Deserialize, PartialEq)]
 pub enum Language {
     Afrikanns,

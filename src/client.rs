@@ -1,3 +1,4 @@
+//! Used to connect to the Prediction Guard API.
 use eventsource_client::Client as EventClient;
 use eventsource_client::SSE;
 use futures::TryStreamExt;
@@ -12,6 +13,7 @@ use crate::{completion, factuality, injection, pii, toxicity, translate, Result}
 
 static USER_AGENT: &str = "Prediction Guard Rust Client";
 
+/// The base error that is returned from the API calls.
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ApiError {
     #[serde(default)]
@@ -30,6 +32,8 @@ impl fmt::Display for ApiError {
 
 impl std::error::Error for ApiError {}
 
+/// Handles the connectivity to the Prediction Guard API. It is safe to be
+/// used across threads.
 #[derive(Debug, Clone)]
 pub struct Client {
     inner: Arc<ClientInner>,
@@ -43,6 +47,7 @@ struct ClientInner {
 }
 
 impl Client {
+    /// Creates a new instance of client to be used with a particular api key and host.
     pub fn new(host: &str, api_key: &str) -> Result<Self> {
         // TODO: Allow options to be passed in.
         let http = ClientBuilder::new()
@@ -128,6 +133,13 @@ impl Client {
         Ok(Some(chat_response))
     }
 
+    /// Calls the generate completion endpoint. It requires an instance of [`completion::ChatRequestEvents`] and a callback function. It returns a [`completion::ChatResponseEvents`]. The generated text is streamed from the
+    /// server. The callback function gets called every time the server receives an event response
+    /// with data. Once the stream the call returns and returns the enitre
+    /// [`completion::ChatResponseEvents`] response.
+    ///
+    /// A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
     pub async fn generate_chat_completion_stream<F>(
         &self,
         mut req: completion::ChatRequestEvents,
@@ -287,6 +299,9 @@ impl Client {
         Ok(Some(pii_response))
     }
 
+    /// Calls the injection check endpoint. It requires an instance of [`injection::Request`]
+    /// and returns a [`injection::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
     pub async fn injection(&self, req: &injection::Request) -> Result<Option<injection::Response>> {
         let url = format!("{}{}", &self.inner.server, injection::PATH);
 
@@ -308,6 +323,9 @@ impl Client {
         Ok(Some(injection_response))
     }
 
+    /// Calls the injection check endpoint. It requires an instance of [`toxicity::Request`]
+    /// and returns a [`toxicity::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
     pub async fn toxicity(&self, req: &toxicity::Request) -> Result<Option<toxicity::Response>> {
         let url = format!("{}{}", &self.inner.server, toxicity::PATH);
 

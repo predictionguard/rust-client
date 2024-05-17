@@ -1,6 +1,6 @@
 use std::env;
 
-extern crate pg_rust_client as pg_client;
+extern crate predictionguard as pg_client;
 use pg_client::{client, completion};
 
 #[tokio::main]
