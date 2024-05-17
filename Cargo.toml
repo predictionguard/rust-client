@@ -1,0 +1,16 @@
+[package]
+name = "predictionguard"
+version = "0.2.0"
+edition = "2021"
+
+[dependencies]
+eventsource-client = "0.12.2"
+reqwest = { version = "0.12.4", features = ["json"] }
+serde = { version = "1.0.188", features = ["derive"]}
+serde_json = { version="1.0.116", features =  ["std"]}
+futures = "0.3.30"
+
+
+[dev-dependencies]
+tokio-test = "*"
+tokio = {version="1.37.0", features=["full"]}
