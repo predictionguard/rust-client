@@ -1,7 +1,7 @@
 use std::env;
 use std::io::Write;
 
-extern crate predictionguard as pg_client;
+extern crate prediction_guard as pg_client;
 use pg_client::{client, completion};
 
 #[tokio::main]

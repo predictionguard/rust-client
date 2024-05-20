@@ -1,7 +1,15 @@
 [package]
-name = "predictionguard"
-version = "0.2.0"
+name = "prediction-guard"
+version = "0.3.0"
 edition = "2021"
+license = "Apache-2.0"
+description = "SDK for the Prediction Guard API"
+homepage = "https://docs.predictionguard.com/docs/getting-started/welcome"
+repository = "https://github.com/predictionguard/rust-client"
+readme = "README.md"
+documentation = "https://docs.rs/prediction-guard/latest/"
+categories = ["api-bindings"]
+keywords = ["prediction", "guard"]
 
 [dependencies]
 eventsource-client = "0.12.2"
@@ -9,7 +17,6 @@ reqwest = { version = "0.12.4", features = ["json"] }
 serde = { version = "1.0.188", features = ["derive"]}
 serde_json = { version="1.0.116", features =  ["std"]}
 futures = "0.3.30"
-
 
 [dev-dependencies]
 tokio-test = "*"
