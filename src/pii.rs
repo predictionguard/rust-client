@@ -2,7 +2,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Path to the PII endpoint.
-pub static PATH: &str = "/PII";
+pub const PATH: &str = "/PII";
 
 /// Denotes the different ways to replace any PII information that is found.
 #[derive(Debug, Serialize, Deserialize)]

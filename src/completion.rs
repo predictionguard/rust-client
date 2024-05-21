@@ -3,10 +3,10 @@
 use serde::{self, de::Deserializer, Deserialize, Serialize, Serializer};
 
 /// Path to the completions endpoint.
-pub static PATH: &str = "/completions";
+pub const PATH: &str = "/completions";
 
 /// Path to the completions chat endpoint.
-pub static CHAT_PATH: &str = "/chat/completions";
+pub const CHAT_PATH: &str = "/chat/completions";
 
 /// Used to send a completion request for chat.
 #[derive(Debug, Deserialize, Serialize)]

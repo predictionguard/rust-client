@@ -2,7 +2,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Path to the injection endpoint.
-pub static PATH: &str = "/injection";
+pub const PATH: &str = "/injection";
 
 /// Represents an individual check on the injection endpoint.
 #[derive(Debug, Deserialize, Serialize)]

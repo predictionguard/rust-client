@@ -1,4 +1,6 @@
 //! Used to connect to the Prediction Guard API.
+use crate::{completion, factuality, injection, pii, toxicity, translate, Result};
+use dotenvy;
 use eventsource_client::Client as EventClient;
 use eventsource_client::SSE;
 use futures::TryStreamExt;
@@ -7,11 +9,9 @@ use reqwest::{
     ClientBuilder, Response, StatusCode,
 };
 use serde::{Deserialize, Serialize};
-use std::{fmt, sync::Arc, time::Duration};
+use std::{env, fmt, sync::Arc, time::Duration};
 
-use crate::{completion, factuality, injection, pii, toxicity, translate, Result};
-
-static USER_AGENT: &str = "Prediction Guard Rust Client";
+const USER_AGENT: &str = "Prediction Guard Rust Client";
 
 /// The base error that is returned from the API calls.
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -32,6 +32,37 @@ impl fmt::Display for ApiError {
 
 impl std::error::Error for ApiError {}
 
+/// Prediction Guard Configuration
+pub struct PgEnvironment {
+    pub key: String,
+    pub host: String,
+}
+
+impl PgEnvironment {
+    /// Specify Prediction Guard API configuration manually
+    ///
+    /// ## Arguments:
+    ///
+    /// * `key` - the Prediction Guard API key
+    /// * `host` - the Prediction Guard URL
+    pub fn new(key: String, host: String) -> Self {
+        Self { key, host }
+    }
+
+    /// Loads Prediction Guard API configuration from either
+    /// a `.env` file or environment variables. Expects to find
+    /// the `PGKEY` and `PGHOST` environment variables.
+    ///
+    /// Returns an error if the environment variables are not found.
+    pub fn from_env() -> Result<Self> {
+        let _ = dotenvy::dotenv(); // Ignoring error - it's ok to not have .env files
+        Ok(Self {
+            key: env::var("PGKEY")?,
+            host: env::var("PGHOST")?,
+        })
+    }
+}
+
 /// Handles the connectivity to the Prediction Guard API. It is safe to be
 /// used across threads.
 #[derive(Debug, Clone)]
@@ -47,9 +78,12 @@ struct ClientInner {
 }
 
 impl Client {
-    /// Creates a new instance of client to be used with a particular api key and host.
-    pub fn new(host: &str, api_key: &str) -> Result<Self> {
-        // TODO: Allow options to be passed in.
+    /// Creates a new instance of client to be used with a particular Prediction Guard environment.
+    ///
+    ///  ## Arguments:
+    ///
+    ///  * `pg_env` - the prediction guard environment to connect to.
+    pub fn new(pg_env: PgEnvironment) -> Result<Self> {
         let http = ClientBuilder::new()
             .connect_timeout(Duration::new(15, 0))
             .read_timeout(Duration::new(30, 0))
@@ -57,7 +91,7 @@ impl Client {
             .user_agent(USER_AGENT)
             .build()?;
 
-        let header_key = match HeaderValue::from_str(api_key) {
+        let header_key = match HeaderValue::from_str(&pg_env.key) {
             Ok(x) => x,
             Err(e) => {
                 return Err(Box::new(e));
@@ -70,17 +104,44 @@ impl Client {
             .ok_or("invalid api key");
 
         let inner = Arc::new(ClientInner {
-            server: host.to_string(),
+            server: pg_env.host.to_string(),
             http_client: http,
             headers: header_map,
-            api_key: api_key.to_string(),
+            api_key: pg_env.key,
         });
 
         Ok(Self { inner })
     }
 
-    /// Calls the generate completion endpoint. It requires an instance of [`completion::Request`]
-    /// and returns a [`completion::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// Calls the health endpoint.
+    ///
+    /// Returns the text response from the server. A 200 (Ok) status code is expected from
+    /// Prediction Guard api. Any other status code is considered an error.
+    pub async fn check_health(&self) -> Result<Option<String>> {
+        let result = self
+            .inner
+            .http_client
+            .get(&self.inner.server)
+            .headers(self.inner.headers.clone())
+            .send()
+            .await?;
+
+        if result.status() != StatusCode::OK {
+            return Err(retrieve_error(result).await);
+        }
+
+        let txt = result.text().await?;
+
+        Ok(Some(txt))
+    }
+
+    /// Calls the generate completion endpoint.
+    ///
+    /// ## Arguments:
+    ///
+    /// * `req` - An instance of [`completion::Request`]
+    ///
+    /// Returns a [`completion::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
     pub async fn generate_completion(
         &self,
@@ -106,8 +167,13 @@ impl Client {
         Ok(Some(comp_response))
     }
 
-    /// Calls the generate chat completion endpoint. It requires an instance of
-    /// [`completion::ChatRequest`] and returns a [`completion::ChatResponse`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// Calls the generate chat completion endpoint.
+    ///
+    /// ## Arguments:
+    ///
+    /// * `req` - An instance of [`completion::ChatRequest`]
+    ///
+    /// Returns an instance of [`completion::ChatResponse`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
     pub async fn generate_chat_completion(
         &self,
@@ -133,17 +199,25 @@ impl Client {
         Ok(Some(chat_response))
     }
 
-    /// Calls the generate completion endpoint. It requires an instance of [`completion::ChatRequestEvents`] and a callback function. It returns a [`completion::ChatResponseEvents`]. The generated text is streamed from the
-    /// server. The callback function gets called every time the server receives an event response
-    /// with data. Once the stream the call returns and returns the enitre
-    /// [`completion::ChatResponseEvents`] response.
+    /// Calls the generate chat completion endpoint.
+    ///
+    /// ## Arguments:
+    ///
+    /// * `req` - An instance of [`completion::ChatRequestEvents`]
+    /// * `event_handler` - Event handler function that is called when a server side event is raised.
+    ///
+    /// Returns an instance of [`completion::ChatResponseEvents`].
+    ///
+    /// The generated text is returned via events from the server. The event handler function gets called
+    /// every time the client receives an event response with data. Once the server terminates the events the call returns.
+    /// The entire [`completion::ChatResponseEvents`] response is then returned to the caller.
     ///
     /// A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
-    pub async fn generate_chat_completion_stream<F>(
+    pub async fn generate_chat_completion_events<F>(
         &self,
         mut req: completion::ChatRequestEvents,
-        callback: &mut F,
+        event_handler: &mut F,
     ) -> Result<Option<completion::ChatResponseEvents>>
     where
         F: FnMut(&String),
@@ -206,7 +280,7 @@ impl Client {
                                             content: Some("".to_string()),
                                         })
                                         .content;
-                                    callback(&msg.unwrap_or("".to_string()));
+                                    event_handler(&msg.unwrap_or("".to_string()));
                                 }
                                 None => return Ok(None),
                             }
@@ -224,8 +298,13 @@ impl Client {
         Ok(None)
     }
 
-    /// Calls the factuality check endpoint. It requires an instance of [`factuality::Request`]
-    /// and returns a [`factuality::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// Calls the factuality check endpoint.
+    ///
+    /// ## Arguments:
+    ///
+    /// * `req` - An instance of [`factuality::Request`]
+    ///
+    /// Returns am instance of [`factuality::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
     pub async fn check_factuality(
         &self,
@@ -251,8 +330,13 @@ impl Client {
         Ok(Some(fact_response))
     }
 
-    /// Calls the translate endpoint. It requires an instance of [`translate::Request`]
-    /// and returns a [`translate::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// Calls the translate endpoint.
+    ///
+    /// ## Arguments:
+    ///
+    /// `req` - Instance of [`translate::Request`]
+    ///
+    /// Returns a [`translate::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
     pub async fn translate(&self, req: &translate::Request) -> Result<Option<translate::Response>> {
         let url = format!("{}{}", &self.inner.server, translate::PATH);
@@ -275,8 +359,13 @@ impl Client {
         Ok(Some(translate_response))
     }
 
-    /// Calls the PII endpoint that is used to remove/detect PII information in the request. It
-    /// requires an instance of [`pii::Request`] and returns [`pii::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api.
+    /// Calls the PII endpoint that is used to remove/detect PII information in the request.
+    ///
+    /// ## Arguments:
+    ///
+    /// `req` - An instance of [`pii::Request`]
+    ///
+    /// Returns an instance of [`pii::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api.
     /// Any other status code is considered an error.
     pub async fn pii(&self, req: &pii::Request) -> Result<Option<pii::Response>> {
         let url = format!("{}{}", &self.inner.server, pii::PATH);
@@ -299,8 +388,13 @@ impl Client {
         Ok(Some(pii_response))
     }
 
-    /// Calls the injection check endpoint. It requires an instance of [`injection::Request`]
-    /// and returns a [`injection::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// Calls the injection check endpoint.
+    ///
+    /// ## Arguments:
+    ///
+    /// `req` - Instance of [`injection::Request`]
+    ///
+    /// Returns an instance of [`injection::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
     pub async fn injection(&self, req: &injection::Request) -> Result<Option<injection::Response>> {
         let url = format!("{}{}", &self.inner.server, injection::PATH);
@@ -323,8 +417,13 @@ impl Client {
         Ok(Some(injection_response))
     }
 
-    /// Calls the injection check endpoint. It requires an instance of [`toxicity::Request`]
-    /// and returns a [`toxicity::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// Calls the injection check endpoint.
+    ///
+    /// ## Arguments:
+    ///
+    /// `req` - An instance of [`toxicity::Request`]
+    ///
+    /// Returns an instance of [`toxicity::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
     pub async fn toxicity(&self, req: &toxicity::Request) -> Result<Option<toxicity::Response>> {
         let url = format!("{}{}", &self.inner.server, toxicity::PATH);

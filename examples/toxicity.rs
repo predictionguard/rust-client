@@ -1,14 +1,13 @@
-use std::env;
-
+//! `toxicity` sends a text prompt to Prediction Guard and returns a single reponse of
+//! type [`toxicity::Response`].
 extern crate prediction_guard as pg_client;
 use pg_client::{client, toxicity};
 
 #[tokio::main]
 async fn main() {
-    let key = env::var("PGKEY").expect("PG Api Key");
-    let host = env::var("PGHOST").expect("PG Host");
+    let pg_env = client::PgEnvironment::from_env().expect("env keys");
 
-    let clt = client::Client::new(&host, &key).expect("client value");
+    let clt = client::Client::new(pg_env).expect("client value");
 
     let req = toxicity::Request {
         text: "Every flight I have is late and I am very angry. I want to hurt someone."

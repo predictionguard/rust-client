@@ -2,7 +2,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Path to the toxicity endpoint.
-pub static PATH: &str = "/toxicity";
+pub const PATH: &str = "/toxicity";
 
 /// Represents an individual check from the toxicity endpoint.
 #[derive(Debug, Deserialize, Serialize)]

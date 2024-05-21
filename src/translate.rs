@@ -2,7 +2,7 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Path to the translate endpoint.
-pub static PATH: &str = "/translate";
+pub const PATH: &str = "/translate";
 
 /// Request type used for the translate endpoint.
 #[derive(Debug, Deserialize, Serialize)]

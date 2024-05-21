@@ -1,8 +1,9 @@
 [package]
 name = "prediction-guard"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 license = "Apache-2.0"
+authors = ["Ed Gonzalez <ed.gonzalez@predictionguard.com>"]
 description = "SDK for the Prediction Guard API"
 homepage = "https://docs.predictionguard.com/docs/getting-started/welcome"
 repository = "https://github.com/predictionguard/rust-client"
@@ -12,12 +13,13 @@ categories = ["api-bindings"]
 keywords = ["prediction", "guard"]
 
 [dependencies]
-eventsource-client = "0.12.2"
-reqwest = { version = "0.12.4", features = ["json"] }
-serde = { version = "1.0.188", features = ["derive"]}
-serde_json = { version="1.0.116", features =  ["std"]}
-futures = "0.3.30"
+eventsource-client = "0.12"
+reqwest = { version = "0.12", features = ["json"] }
+serde = { version = "1.0", features = ["derive"]}
+serde_json = { version="1.0", features =  ["std"]}
+futures = "0.3"
+dotenvy = "0.15"
 
 [dev-dependencies]
 tokio-test = "*"
-tokio = {version="1.37.0", features=["full"]}
+tokio = {version="1.37", features=["full"]}
