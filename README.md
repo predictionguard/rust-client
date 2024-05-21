@@ -1,5 +1,7 @@
 ## Prediction Guard Rust Client
 
+[![crates.io](https://img.shields.io/crates/v/prediction-guard.svg)](https://crates.io/crates/prediction-guard)
+
 ### Description
 
 This crate provides functionality developed to simplify interfacing with [Prediction Guard API](https://www.predictionguard.com/) in Rust.
