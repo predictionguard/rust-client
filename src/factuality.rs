@@ -2,7 +2,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Path to the factuality endpoint.
-pub static PATH: &str = "/factuality";
+pub const PATH: &str = "/factuality";
 
 /// Request type for the factuality endpoint.
 #[derive(Debug, Deserialize, Serialize)]

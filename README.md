@@ -1,7 +1,5 @@
 ## Prediction Guard Rust Client
 
-
-
 ### Description
 
 This crate provides functionality developed to simplify interfacing with [Prediction Guard API](https://www.predictionguard.com/) in Rust.
@@ -20,10 +18,9 @@ use pg_client::{client, completion};
 
 #[tokio::main]
 async fn main() {
-    let key = env::var("PGKEY").expect("PG Api Key");
-    let host = env::var("PGHOST").expect("PG Host");
+    let pg_env = client::PgEnvironment::from_env().expect("env keys");
 
-    let clt = client::Client::new(&host, &key).expect("client value");
+    let clt = client::Client::new(pg_env).expect("client value");
 
     let req = completion::ChatRequest {
         model: completion::Models::NeuralChat7B,
@@ -43,6 +40,8 @@ async fn main() {
     println!("\nchat completion response:\n\n {:?}", result);
 }
 ```
+Take a look at the `examples` directory for more examples.
+
 
 ### Docs
 
@@ -54,9 +53,10 @@ You can find the Prediction Guard API docs on the Prediction Guard website.
 
 ### Getting started
 
-The example below shows you can get started connecting to the api:
-
-
+Once you have your api key you can use the `makefile` to run curl commands
+for the different api endpoints. For example, `make curl-injection` will connect to
+the injection endpoint and return the injection response. The `makefile` also allows you to run the different examples 
+such as `make run-injection` to run the injection example.
 
 #### Licensing
 

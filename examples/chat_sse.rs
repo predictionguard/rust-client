@@ -1,4 +1,6 @@
-use std::env;
+//! `chat_sse` sends a prompt to Prediction Guard and returns a single reponse of
+//! type [`completion::ChatResponseEvents`]. The event handler function is called
+//! every time a server event is received.
 use std::io::Write;
 
 extern crate prediction_guard as pg_client;
@@ -6,10 +8,9 @@ use pg_client::{client, completion};
 
 #[tokio::main]
 async fn main() {
-    let key = env::var("PGKEY").expect("PG Api Key");
-    let host = env::var("PGHOST").expect("PG Host");
+    let pg_env = client::PgEnvironment::from_env().expect("env keys");
 
-    let clt = client::Client::new(&host, &key).expect("client value");
+    let clt = client::Client::new(pg_env).expect("client value");
 
     let req = completion::ChatRequestEvents {
         model: completion::Models::NeuralChat7B,
@@ -25,13 +26,13 @@ async fn main() {
     let lock = std::io::stdout().lock();
     let mut buf = std::io::BufWriter::new(lock);
 
-    let mut callback = |msg: &String| {
+    let mut evt_handler = |msg: &String| {
         let _ = buf.write(msg.as_bytes());
         let _ = buf.flush();
     };
 
     let result = clt
-        .generate_chat_completion_stream(req, &mut callback)
+        .generate_chat_completion_events(req, &mut evt_handler)
         .await
         .expect("error from chat_events");
 
