@@ -1,14 +1,15 @@
 version: 2
 jobs:
   build:
-    machine:
-      image: ubuntu-2004:current
-    resource_class: medium
+    docker:
+      - image: cimg/rust:1.78.0
     steps:
       - checkout
       - run:
-          name: Install Rust
+          name: Check versions
           command: |
-              curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-              which cargo
-              cargo version
+              cargo --version
+      - run:
+          name: Build
+          command: |
+              cargo build
