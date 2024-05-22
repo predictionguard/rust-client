@@ -1,5 +1,6 @@
 ## Prediction Guard Rust Client
 
+[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/Cy6tWW4wpE69Ftb8vdTAN9/NrVgbqg2cCEGyBjGRJcNhf/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/Cy6tWW4wpE69Ftb8vdTAN9/NrVgbqg2cCEGyBjGRJcNhf/tree/main)
 [![crates.io](https://img.shields.io/crates/v/prediction-guard.svg)](https://crates.io/crates/prediction-guard)
 
 ### Description
