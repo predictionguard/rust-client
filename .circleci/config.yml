@@ -1,0 +1,14 @@
+version: 2
+jobs:
+  build:
+    machine:
+      image: ubuntu-2004:current
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: Install Rust
+          command: |
+              curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+              which cargo
+              cargo version
