@@ -13,3 +13,7 @@ jobs:
           name: Build
           command: |
               cargo build
+      - run:
+          name: Clippy
+          command: |
+              cargo clippy
