@@ -174,7 +174,7 @@ where
     };
 
     match mdl {
-        "Meta-Llama-3-8B-Instruct" => Ok(Models::MetaLlama38BInstruct),
+        "Hermes-2-Pro-Llama-3-8B" => Ok(Models::Hermes2ProLlama38B),
         "Nous-Hermes-Llama2-13B" => Ok(Models::NousHermesLlama213B),
         "Hermes-2-Pro-Mistral-7B" => Ok(Models::Hermes2ProMistral7B),
         "Neural-Chat-7B" => Ok(Models::NeuralChat7B),
