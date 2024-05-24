@@ -126,7 +126,7 @@ pub enum Roles {
 /// The different models that can be used in the completion endpoints.
 #[derive(Debug, PartialEq)]
 pub enum Models {
-    MetaLlama38BInstruct,
+    Hermes2ProLlama38B,
     NousHermesLlama213B,
     Hermes2ProMistral7B,
     NeuralChat7B,
@@ -141,7 +141,7 @@ impl Serialize for Models {
         S: Serializer,
     {
         match self {
-            Models::MetaLlama38BInstruct => serializer.serialize_str("Meta-Llama-3-8B-Instruct"),
+            Models::Hermes2ProLlama38B => serializer.serialize_str("Hermes-2-Pro-Llama-3-8B"),
             Models::NousHermesLlama213B => serializer.serialize_str("Nous-Hermes-Llama2-13B"),
             Models::Hermes2ProMistral7B => serializer.serialize_str("Hermes-2-Pro-Mistral-7B"),
             Models::NeuralChat7B => serializer.serialize_str("Neural-Chat-7B"),
