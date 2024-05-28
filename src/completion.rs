@@ -1,5 +1,5 @@
 //! Data types that are used for the completion endpoints, including chat and chat
-//! streaming.
+//! events.
 use serde::{self, de::Deserializer, Deserialize, Serialize, Serializer};
 
 /// Path to the completions endpoint.

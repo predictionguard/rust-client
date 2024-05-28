@@ -84,7 +84,7 @@ run-injection:
 	cargo run --example injection
 
 curl-pii:
-	curl -X POST https://api.predictionguard.com/pii \
+	curl -X POST https://api.predictionguard.com/PII \
      -H "x-api-key: ${PGKEY}" \
      -H "Content-Type: application/json" \
      -d '{ \

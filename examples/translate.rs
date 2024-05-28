@@ -1,6 +1,7 @@
 //! `translates` sends text, source language and target language to Prediction Guard and returns a single reponse of
 //! type [`translate::Response`].
 extern crate prediction_guard as pg_client;
+
 use pg_client::{client, translate};
 
 #[tokio::main]
@@ -15,7 +16,7 @@ async fn main() {
         target_lang: translate::Language::Spanish,
     };
 
-    let result = clt.translate(&req).await.expect("error from toxicity");
+    let result = clt.translate(&req).await.expect("error from translate");
 
     println!("\n\ntranslate response:\n{:?}\n\n", result);
 }

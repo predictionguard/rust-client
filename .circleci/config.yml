@@ -8,12 +8,16 @@ jobs:
       - run:
           name: Check versions
           command: |
-              cargo --version
+            cargo --version
       - run:
           name: Build
           command: |
-              cargo build
+            cargo build
       - run:
           name: Clippy
           command: |
-              cargo clippy
+            cargo clippy
+      - run:
+          name: Tests
+          command: |
+            cargo test

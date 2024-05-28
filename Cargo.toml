@@ -23,3 +23,4 @@ dotenvy = "0.15"
 [dev-dependencies]
 tokio-test = "0.4"
 tokio = {version="1.37", features=["full"]}
+httpmock = "0.7"
