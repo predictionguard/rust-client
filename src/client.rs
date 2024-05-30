@@ -1,5 +1,5 @@
 //! Used to connect to the Prediction Guard API.
-use crate::{completion, factuality, injection, pii, toxicity, translate, Result};
+use crate::{completion, embedding, factuality, injection, pii, toxicity, translate, Result};
 use dotenvy;
 use eventsource_client::Client as EventClient;
 use eventsource_client::SSE;
@@ -69,6 +69,7 @@ impl PgEnvironment {
 pub struct Client {
     inner: Arc<ClientInner>,
 }
+
 #[derive(Debug)]
 struct ClientInner {
     server: String,
@@ -133,6 +134,35 @@ impl Client {
         let txt = result.text().await?;
 
         Ok(Some(txt))
+    }
+
+    /// Calls the embedding endpoint.
+    ///
+    /// ## Arguments:
+    ///
+    /// * `req` - An instance of [`embedding::Request`]
+    ///
+    /// Returns a [`embedding::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
+    pub async fn embedding(&self, req: &embedding::Request) -> Result<Option<embedding::Response>> {
+        let url = format!("{}{}", &self.inner.server, embedding::PATH);
+
+        let result = self
+            .inner
+            .http_client
+            .post(url)
+            .headers(self.inner.headers.clone())
+            .json(req)
+            .send()
+            .await?;
+
+        if result.status() != StatusCode::OK {
+            return Err(retrieve_error(result).await);
+        }
+
+        let embed_response = result.json::<embedding::Response>().await?;
+
+        Ok(Some(embed_response))
     }
 
     /// Calls the generate completion endpoint.
@@ -257,7 +287,7 @@ impl Client {
                                         return Err(Box::from(ApiError {
                                             http_status: 500,
                                             error: format!("error parsing stream response: {}", e),
-                                        }))
+                                        }));
                                     }
                                 };
 

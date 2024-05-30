@@ -1,4 +1,4 @@
-//! `translates` sends text, source language and target language to Prediction Guard and returns a single reponse of
+//! `translates` sends text, source language and target language to Prediction Guard and returns a single response of
 //! type [`translate::Response`].
 extern crate prediction_guard as pg_client;
 

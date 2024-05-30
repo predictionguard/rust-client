@@ -1,6 +1,7 @@
 //! Data types that are used for the completion endpoints, including chat and chat
 //! events.
-use serde::{self, de::Deserializer, Deserialize, Serialize, Serializer};
+use crate::models;
+use serde::{self, Deserialize, Serialize};
 
 /// Path to the completions endpoint.
 pub const PATH: &str = "/completions";
@@ -11,8 +12,8 @@ pub const CHAT_PATH: &str = "/chat/completions";
 /// Used to send a completion request for chat.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ChatRequest {
-    #[serde(deserialize_with = "deserialize_models")]
-    pub model: Models,
+    #[serde(deserialize_with = "models::deserialize_models")]
+    pub model: models::Model,
     pub messages: Vec<Message>,
     pub max_tokens: i64,
     pub temperature: f64,
@@ -38,8 +39,8 @@ pub struct ChatResponse {
     pub id: Option<String>,
     pub object: Option<String>,
     pub created: Option<i64>,
-    #[serde(deserialize_with = "deserialize_models_option")]
-    pub model: Option<Models>,
+    #[serde(deserialize_with = "models::deserialize_models_option")]
+    pub model: Option<models::Model>,
     pub choices: Option<Vec<ChatChoice>>,
 }
 
@@ -67,16 +68,16 @@ pub struct ChatResponseEvents {
     pub id: Option<String>,
     pub object: Option<String>,
     pub created: Option<i64>,
-    #[serde(deserialize_with = "deserialize_models_option")]
-    pub model: Option<Models>,
+    #[serde(deserialize_with = "models::deserialize_models_option")]
+    pub model: Option<models::Model>,
     pub choices: Option<Vec<ChatChoiceEvents>>,
 }
 
 /// Completion request for chat events endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ChatRequestEvents {
-    #[serde(deserialize_with = "deserialize_models")]
-    pub model: Models,
+    #[serde(deserialize_with = "models::deserialize_models")]
+    pub model: models::Model,
     pub messages: Vec<Message>,
     pub max_tokens: i64,
     pub temperature: f64,
@@ -88,8 +89,8 @@ pub struct ChatRequestEvents {
 /// Completion request for the base completion endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Request {
-    #[serde(deserialize_with = "deserialize_models")]
-    pub model: Models,
+    #[serde(deserialize_with = "models::deserialize_models")]
+    pub model: models::Model,
     pub prompt: String,
 }
 
@@ -99,8 +100,8 @@ pub struct Choice {
     pub text: String,
     pub index: i64,
     pub status: String,
-    #[serde(deserialize_with = "deserialize_models")]
-    pub model: Models,
+    #[serde(deserialize_with = "models::deserialize_models")]
+    pub model: models::Model,
 }
 
 /// Completion response for the base completetion endpoint.
@@ -121,65 +122,4 @@ pub enum Roles {
     User,
     #[serde(rename = "assistant")]
     Assistant,
-}
-
-/// The different models that can be used in the completion endpoints.
-#[derive(Debug, PartialEq)]
-pub enum Models {
-    Hermes2ProLlama38B,
-    NousHermesLlama213B,
-    Hermes2ProMistral7B,
-    NeuralChat7B,
-    Yi34BChat,
-    DeepseekCoder67binstruct,
-    Other(String),
-}
-
-impl Serialize for Models {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            Models::Hermes2ProLlama38B => serializer.serialize_str("Hermes-2-Pro-Llama-3-8B"),
-            Models::NousHermesLlama213B => serializer.serialize_str("Nous-Hermes-Llama2-13B"),
-            Models::Hermes2ProMistral7B => serializer.serialize_str("Hermes-2-Pro-Mistral-7B"),
-            Models::NeuralChat7B => serializer.serialize_str("Neural-Chat-7B"),
-            Models::Yi34BChat => serializer.serialize_str("Yi-34B-Chat"),
-            Models::DeepseekCoder67binstruct => {
-                serializer.serialize_str("deepseek-coder-6.7b-instruct")
-            }
-            Models::Other(s) => serializer.serialize_str(s.as_str()),
-        }
-    }
-}
-
-fn deserialize_models_option<'de, D>(deserializer: D) -> Result<Option<Models>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    match deserialize_models(deserializer) {
-        Ok(x) => Ok(Some(x)),
-        Err(e) => Err(e),
-    }
-}
-
-fn deserialize_models<'de, D>(deserializer: D) -> Result<Models, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let mdl: &str = match Deserialize::deserialize(deserializer) {
-        Ok(m) => m,
-        Err(e) => return Err(e),
-    };
-
-    match mdl {
-        "Hermes-2-Pro-Llama-3-8B" => Ok(Models::Hermes2ProLlama38B),
-        "Nous-Hermes-Llama2-13B" => Ok(Models::NousHermesLlama213B),
-        "Hermes-2-Pro-Mistral-7B" => Ok(Models::Hermes2ProMistral7B),
-        "Neural-Chat-7B" => Ok(Models::NeuralChat7B),
-        "Yi-34B-Chat" => Ok(Models::Yi34BChat),
-        "deepseek-coder-6.7b-instruct" => Ok(Models::DeepseekCoder67binstruct),
-        _ => Ok(Models::Other(mdl.to_string())),
-    }
 }

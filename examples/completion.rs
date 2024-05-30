@@ -1,7 +1,8 @@
-//! `completion` sends a prompt to Prediction Guard and returns a single reponse of
+//! `completion` sends a prompt to Prediction Guard and returns a single response of
 //! type [`completion::Response`].
 extern crate prediction_guard as pg_client;
-use pg_client::{client, completion};
+
+use pg_client::{client, completion, models};
 
 #[tokio::main]
 async fn main() {
@@ -10,7 +11,7 @@ async fn main() {
     let clt = client::Client::new(pg_env).expect("client value");
 
     let req = completion::Request {
-        model: completion::Models::NeuralChat7B,
+        model: models::Model::NeuralChat7B,
         prompt: "Will I lose my hair?".to_string(),
     };
 

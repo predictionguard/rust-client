@@ -1,4 +1,4 @@
-//! `pii` sends a prompt to Prediction Guard and returns a single reponse of
+//! `pii` sends a prompt to Prediction Guard and returns a single response of
 //! type [`pii::Response`].
 extern crate prediction_guard as pg_client;
 

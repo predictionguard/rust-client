@@ -1,6 +1,7 @@
-//! `toxicity` sends a text prompt to Prediction Guard and returns a single reponse of
+//! `toxicity` sends a text prompt to Prediction Guard and returns a single response of
 //! type [`toxicity::Response`].
 extern crate prediction_guard as pg_client;
+
 use pg_client::{client, toxicity};
 
 #[tokio::main]
