@@ -10,10 +10,9 @@ async fn main() {
 
     let clt = client::Client::new(pg_env).expect("client value");
 
-    let req = toxicity::Request {
-        text: "Every flight I have is late and I am very angry. I want to hurt someone."
-            .to_string(),
-    };
+    let req = toxicity::Request::new(
+        "Every flight I have is late and I am very angry. I want to hurt someone.".to_string(),
+    );
 
     let result = clt.toxicity(&req).await.expect("error from toxicity");
 

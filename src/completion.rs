@@ -1,5 +1,4 @@
-//! Data types that are used for the completion endpoints, including chat and chat
-//! events.
+//! Data types that are used for the completion endpoints.
 use serde::{self, Deserialize, Serialize};
 
 use crate::{models, pii};
@@ -9,9 +8,9 @@ pub const PATH: &str = "/completions";
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct RequestInput {
-    pub block_prompt_injection: bool,
-    pub pii: Option<String>,
-    pub pii_replace_method: Option<pii::ReplaceMethod>,
+    pub(crate) block_prompt_injection: bool,
+    pub(crate) pii: Option<String>,
+    pub(crate) pii_replace_method: Option<pii::ReplaceMethod>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -24,13 +23,13 @@ pub struct RequestOutput {
 #[derive(Debug, Deserialize, Default, Serialize)]
 pub struct Request {
     #[serde(deserialize_with = "models::deserialize_models")]
-    pub model: models::Model,
-    pub prompt: String,
-    pub max_tokens: Option<i64>,
-    pub temperature: Option<f64>,
-    pub top_p: Option<f64>,
-    pub input: Option<RequestInput>,
-    pub output: Option<RequestOutput>,
+    pub(crate) model: models::Model,
+    pub(crate) prompt: String,
+    pub(crate) max_tokens: Option<i64>,
+    pub(crate) temperature: Option<f64>,
+    pub(crate) top_p: Option<f64>,
+    pub(crate) input: Option<RequestInput>,
+    pub(crate) output: Option<RequestOutput>,
 }
 
 impl Request {

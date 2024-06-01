@@ -7,11 +7,21 @@ pub const PATH: &str = "/translate";
 /// Request type used for the translate endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Request {
-    pub text: String,
+    pub(crate) text: String,
     #[serde(deserialize_with = "deserialize_language")]
-    pub source_lang: Language,
+    pub(crate) source_lang: Language,
     #[serde(deserialize_with = "deserialize_language")]
-    pub target_lang: Language,
+    pub(crate) target_lang: Language,
+}
+
+impl Request {
+    pub fn new(text: String, source_lang: Language, target_lang: Language) -> Request {
+        Self {
+            text,
+            source_lang,
+            target_lang,
+        }
+    }
 }
 
 /// Response type used for the translate endpoint.

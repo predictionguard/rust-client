@@ -7,10 +7,15 @@ pub const PATH: &str = "/factuality";
 /// Request type for the factuality endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Request {
-    pub reference: String,
-    pub text: String,
+    pub(crate) reference: String,
+    pub(crate) text: String,
 }
 
+impl Request {
+    pub fn new(reference: String, text: String) -> Request {
+        Self { reference, text }
+    }
+}
 /// Response type for the factuality endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Response {

@@ -11,11 +11,11 @@ async fn main() {
 
     let clt = client::Client::new(pg_env).expect("client value");
 
-    let req = pii::Request {
-        prompt: "My email is joe@gmail.com and my number is 270-123-4567".to_string(),
-        replace: true,
-        replace_method: ReplaceMethod::Mask,
-    };
+    let req = pii::Request::new(
+        "My email is joe@gmail.com and my number is 270-123-4567".to_string(),
+        true,
+        ReplaceMethod::Mask,
+    );
 
     let result = clt.pii(&req).await.expect("error from pii");
 

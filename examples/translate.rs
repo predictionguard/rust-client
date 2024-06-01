@@ -10,11 +10,11 @@ async fn main() {
 
     let clt = client::Client::new(pg_env).expect("client value");
 
-    let req = translate::Request {
-        text: "The rain in Spain stays mainly in the plain".to_string(),
-        source_lang: translate::Language::English,
-        target_lang: translate::Language::Spanish,
-    };
+    let req = translate::Request::new(
+        "The rain in Spain stays mainly in the plain".to_string(),
+        translate::Language::English,
+        translate::Language::Spanish,
+    );
 
     let result = clt.translate(&req).await.expect("error from translate");
 

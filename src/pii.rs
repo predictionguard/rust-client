@@ -29,11 +29,21 @@ pub struct Check {
 /// Request type for the PII detection endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Request {
-    pub prompt: String,
-    pub replace: bool,
-    pub replace_method: ReplaceMethod,
+    pub(crate) prompt: String,
+    pub(crate) replace: bool,
+    pub(crate) replace_method: ReplaceMethod,
 }
 
+impl Request {
+    /// Creates an instance of pii Request.
+    pub fn new(prompt: String, replace: bool, replace_method: ReplaceMethod) -> Request {
+        Self {
+            prompt,
+            replace,
+            replace_method,
+        }
+    }
+}
 /// Response type for the PII detection endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Response {
