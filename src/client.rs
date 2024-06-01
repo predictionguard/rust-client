@@ -1,15 +1,17 @@
 //! Used to connect to the Prediction Guard API.
-use crate::{completion, embedding, factuality, injection, pii, toxicity, translate, Result};
+use std::{env, fmt, sync::Arc, time::Duration};
+
 use dotenvy;
 use eventsource_client::Client as EventClient;
 use eventsource_client::SSE;
 use futures::TryStreamExt;
 use reqwest::{
-    header::{HeaderMap, HeaderValue},
-    ClientBuilder, Response, StatusCode,
+    ClientBuilder,
+    header::{HeaderMap, HeaderValue}, Response, StatusCode,
 };
 use serde::{Deserialize, Serialize};
-use std::{env, fmt, sync::Arc, time::Duration};
+
+use crate::{chat, completion, embedding, factuality, injection, pii, Result, toxicity, translate};
 
 const USER_AGENT: &str = "Prediction Guard Rust Client";
 
@@ -207,9 +209,9 @@ impl Client {
     /// is considered an error.
     pub async fn generate_chat_completion(
         &self,
-        req: &completion::ChatRequest,
-    ) -> Result<Option<completion::ChatResponse>> {
-        let url = format!("{}{}", &self.inner.server, completion::CHAT_PATH);
+        req: &chat::Request<chat::Message>,
+    ) -> Result<Option<chat::Response>> {
+        let url = format!("{}{}", &self.inner.server, chat::PATH);
 
         let result = self
             .inner
@@ -224,7 +226,7 @@ impl Client {
             return Err(retrieve_error(result).await);
         }
 
-        let chat_response = result.json::<completion::ChatResponse>().await?;
+        let chat_response = result.json::<chat::Response>().await?;
 
         Ok(Some(chat_response))
     }
@@ -246,13 +248,13 @@ impl Client {
     /// is considered an error.
     pub async fn generate_chat_completion_events<F>(
         &self,
-        mut req: completion::ChatRequestEvents,
+        mut req: chat::Request<chat::Message>,
         event_handler: &mut F,
-    ) -> Result<Option<completion::ChatResponseEvents>>
+    ) -> Result<Option<chat::ResponseEvents>>
     where
         F: FnMut(&String),
     {
-        let url = format!("{}{}", &self.inner.server, completion::CHAT_PATH);
+        let url = format!("{}{}", &self.inner.server, chat::PATH);
 
         req.stream = true;
 
@@ -280,16 +282,15 @@ impl Client {
                             }
 
                             // JSON Response
-                            let resp: completion::ChatResponseEvents =
-                                match serde_json::from_str(&evt.data) {
-                                    Ok(v) => v,
-                                    Err(e) => {
-                                        return Err(Box::from(ApiError {
-                                            http_status: 500,
-                                            error: format!("error parsing stream response: {}", e),
-                                        }));
-                                    }
-                                };
+                            let resp: chat::ResponseEvents = match serde_json::from_str(&evt.data) {
+                                Ok(v) => v,
+                                Err(e) => {
+                                    return Err(Box::from(ApiError {
+                                        http_status: 500,
+                                        error: format!("error parsing stream response: {}", e),
+                                    }));
+                                }
+                            };
 
                             match resp.choices {
                                 Some(ref choices) => {
@@ -306,7 +307,7 @@ impl Client {
                                     let msg = choices[0]
                                         .delta
                                         .clone()
-                                        .unwrap_or(completion::ChatEventsDelta {
+                                        .unwrap_or(chat::EventsDelta {
                                             content: Some("".to_string()),
                                         })
                                         .content;
@@ -326,6 +327,31 @@ impl Client {
         }
 
         Ok(None)
+    }
+
+    // TODO: Document
+    pub async fn generate_chat_vision(
+        &self,
+        req: &chat::Request<chat::MessageVision>,
+    ) -> Result<Option<chat::Response>> {
+        let url = format!("{}{}", &self.inner.server, chat::PATH);
+
+        let result = self
+            .inner
+            .http_client
+            .post(url)
+            .headers(self.inner.headers.clone())
+            .json(req)
+            .send()
+            .await?;
+
+        if result.status() != StatusCode::OK {
+            return Err(retrieve_error(result).await);
+        }
+
+        let chat_response = result.json::<chat::Response>().await?;
+
+        Ok(Some(chat_response))
     }
 
     /// Calls the factuality check endpoint.

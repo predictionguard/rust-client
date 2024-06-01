@@ -5,9 +5,10 @@ use serde::{Deserialize, Serialize};
 pub const PATH: &str = "/PII";
 
 /// Denotes the different ways to replace any PII information that is found.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
 pub enum ReplaceMethod {
     #[serde(rename = "random")]
+    #[default]
     Random,
     #[serde(rename = "mask")]
     Mask,

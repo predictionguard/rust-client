@@ -4,17 +4,45 @@ use crate::models;
 
 pub(crate) const PATH: &str = "/embeddings";
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Default, Deserialize, Debug)]
 pub struct Input {
-    pub text: String,
-    pub image: String,
+    text: Option<String>,
+    image: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Default, Deserialize, Debug)]
 pub struct Request {
     pub input: Vec<Input>,
     #[serde(deserialize_with = "models::deserialize_models")]
     pub model: models::Model,
+}
+
+impl Request {
+    pub fn new(
+        model: models::Model,
+        text: Option<String>,
+        image_base64: Option<String>,
+    ) -> Request {
+        let mut req = Self {
+            model,
+            ..Default::default()
+        };
+
+        if !text.is_none() {
+            req.input.push(Input {
+                text,
+                ..Default::default()
+            });
+        }
+
+        if !image_base64.is_none() {
+            req.input.push(Input {
+                image: image_base64,
+                ..Default::default()
+            });
+        }
+        req
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]

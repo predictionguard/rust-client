@@ -11,8 +11,9 @@ async fn main() {
     let clt = client::Client::new(pg_env).expect("client value");
 
     let req = completion::Request {
-        model: models::Model::NeuralChat7B,
-        prompt: "Will I lose my hair?".to_string(),
+        model: vec![models::Model::NeuralChat7B],
+        prompt: vec!["Will I lose my hair?".to_string()],
+        ..Default::default()
     };
 
     let result = clt

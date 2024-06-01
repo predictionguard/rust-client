@@ -2,7 +2,7 @@
 //! type [`completion::ChatResponse`]
 extern crate prediction_guard as pg_client;
 
-use pg_client::{client, completion, models};
+use pg_client::{chat, client, models};
 
 #[tokio::main]
 async fn main() {
@@ -10,15 +10,13 @@ async fn main() {
 
     let clt = client::Client::new(pg_env).expect("client value");
 
-    let req = completion::ChatRequest {
-        model: models::Model::NeuralChat7B,
-        messages: vec![completion::Message {
-            role: completion::Roles::User,
-            content: "How do you feel about the world in general?".to_string(),
-        }],
-        max_tokens: 1000,
-        temperature: 1.1,
-    };
+    let req = chat::Request::<chat::Message>::new(models::Model::NeuralChat7B)
+        .add_message(
+            chat::Roles::User,
+            "How do you feel about the world in general?".to_string(),
+        )
+        .max_tokens(1000)
+        .temperature(1.1);
 
     let result = clt
         .generate_chat_completion(&req)
