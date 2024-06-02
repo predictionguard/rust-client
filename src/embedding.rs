@@ -28,14 +28,14 @@ impl Request {
             ..Default::default()
         };
 
-        if !text.is_none() {
+        if text.is_some() {
             req.input.push(Input {
                 text,
                 ..Default::default()
             });
         }
 
-        if !image_base64.is_none() {
+        if image_base64.is_some() {
             req.input.push(Input {
                 image: image_base64,
                 ..Default::default()

@@ -120,7 +120,7 @@ impl Request<Message> {
 
 impl<T> Request<T> {
     pub fn new(mdl: models::Model) -> Self {
-        let r = Self {
+        Self {
             model: mdl,
             messages: Vec::new(),
             max_tokens: 100,
@@ -129,8 +129,7 @@ impl<T> Request<T> {
             input: None,
             output: None,
             stream: false,
-        };
-        r
+        }
     }
 
     pub fn with_message(mut self, msg: T) -> Request<T> {
