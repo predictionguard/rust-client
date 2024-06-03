@@ -1,5 +1,5 @@
 //! `chat_sse` sends a prompt to Prediction Guard and returns a single response of
-//! type [`completion::ChatResponseEvents`]. The event handler function is called
+//! type [`chat::Response`]. The event handler function is called
 //! every time a server event is received.
 extern crate prediction_guard as pg_client;
 
@@ -19,7 +19,7 @@ async fn main() {
             "How do you feel about the world in general".to_string(),
         )
         .max_tokens(1000)
-        .temperature(1.1);
+        .temperature(0.85);
 
     let lock = std::io::stdout().lock();
     let mut buf = std::io::BufWriter::new(lock);

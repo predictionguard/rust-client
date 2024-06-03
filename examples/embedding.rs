@@ -1,4 +1,4 @@
-//! `embedding` sends an image base64 encoded and text to Prediction Guard and returns a single response of
+//! `embedding` sends an image base64 encoded or text to Prediction Guard and returns a single response of
 //! type [`embedding::Response`].
 extern crate prediction_guard as pg_client;
 

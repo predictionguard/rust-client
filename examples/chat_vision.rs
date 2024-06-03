@@ -2,8 +2,8 @@
 //! type [`chat::Response`]
 extern crate prediction_guard as pg_client;
 
-use pg_client::{chat, client, models};
 use pg_client::chat::MessageVision;
+use pg_client::{chat, client, models};
 
 #[tokio::main]
 async fn main() {
@@ -12,7 +12,7 @@ async fn main() {
     let clt = client::Client::new(pg_env).expect("client value");
 
     let req = chat::Request::<MessageVision>::new(models::Model::Llava157bhf)
-        .temperature(1.1)
+        .temperature(0.85)
         .max_tokens(1000)
         .add_message(
             chat::Roles::User,

@@ -203,9 +203,9 @@ impl Client {
     ///
     /// ## Arguments:
     ///
-    /// * `req` - An instance of [`completion::ChatRequest`]
+    /// * `req` - An instance of [`chat::Request::<Message>`]
     ///
-    /// Returns an instance of [`completion::ChatResponse`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// Returns an instance of [`chat::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
     pub async fn generate_chat_completion(
         &self,
@@ -235,14 +235,14 @@ impl Client {
     ///
     /// ## Arguments:
     ///
-    /// * `req` - An instance of [`completion::ChatRequestEvents`]
+    /// * `req` - An instance of [`chat::Request::<Message>`]
     /// * `event_handler` - Event handler function that is called when a server side event is raised.
     ///
-    /// Returns an instance of [`completion::ChatResponseEvents`].
+    /// Returns an instance of [`chat::Response`].
     ///
     /// The generated text is returned via events from the server. The event handler function gets called
     /// every time the client receives an event response with data. Once the server terminates the events the call returns.
-    /// The entire [`completion::ChatResponseEvents`] response is then returned to the caller.
+    /// The entire [`chat::Response`] response is then returned to the caller.
     ///
     /// A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
@@ -329,7 +329,14 @@ impl Client {
         Ok(None)
     }
 
-    // TODO: Document
+    /// Calls the generate chat completion endpoint for chat vision.
+    ///
+    /// ## Arguments:
+    ///
+    /// * `req` - An instance of [`chat::Request::<MessageVision>`]
+    ///
+    /// Returns an instance of [`chat::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
     pub async fn generate_chat_vision(
         &self,
         req: &chat::Request<chat::MessageVision>,

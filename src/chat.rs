@@ -10,6 +10,7 @@ pub const PATH: &str = "/chat/completions";
 const IMAGE_URL_TYPE: &str = "image_url";
 const TEXT_TYPE: &str = "text";
 
+/// Allows to request PII check and Injection check on the inputs in the chat request.
 #[derive(Debug, Deserialize, Serialize, Default)]
 pub struct RequestInput {
     block_prompt_injection: bool,
@@ -17,18 +18,21 @@ pub struct RequestInput {
     pii_replace_method: Option<pii::ReplaceMethod>,
 }
 
+/// Allows for checking the output of the request for factuality and toxicity.
 #[derive(Debug, Deserialize, Serialize, Default)]
 struct RequestOutput {
     factuality: bool,
     toxicity: bool,
 }
 
+/// Holds a data uri which contains a base64 encoded image.
 #[derive(Serialize, Default, Clone, Deserialize, Debug)]
 struct ImageURL {
     // Currently only base64 encoded image works.
     url: String,
 }
 
+/// Contains the content to use for chat vision. A prompt and an image are specified.
 #[derive(Serialize, Default, Clone, Deserialize, Debug)]
 pub struct Content {
     #[serde(rename = "type")]
@@ -37,21 +41,14 @@ pub struct Content {
     image_url: Option<ImageURL>,
 }
 
+/// Message used when calling chat vision.
 #[derive(Serialize, Default, Deserialize, Debug)]
 pub struct MessageVision {
-    pub role: Roles,
-    pub content: Vec<Content>,
+    role: Roles,
+    content: Vec<Content>,
 }
 
-/// Represents a message in the chat response.
-#[derive(Debug, Default, Deserialize, Serialize)]
-pub struct Message {
-    pub role: Roles,
-    pub content: String,
-    pub output: Option<String>,
-}
-
-/// Used to send a completion request for chat.
+/// Used to send a request for chat.
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Request<T> {
     #[serde(deserialize_with = "models::deserialize_models")]
@@ -69,14 +66,12 @@ pub struct Request<T> {
 }
 
 impl Request<MessageVision> {
-    /// Adds an image as a message.
+    /// Adds a message to the request when making a chat vision call.
     ///
-    /// # Aurguments
+    /// ## Arguments
     ///
     /// * `role` - The role of the user sending the message.
-    ///
     /// * `prompt` - The text prompt to be sent along with the image.
-    ///
     /// * `image_uri` -  data URI for base64 encoded image e.g. data:image/jpeg;base64,<data>
     pub fn add_message(
         mut self,
@@ -106,6 +101,13 @@ impl Request<MessageVision> {
 }
 
 impl Request<Message> {
+    /// Adds a message to the request when making a chat completion call
+    /// or chat events call.
+    ///
+    /// ## Arguments
+    ///
+    /// * `role` - The role of the user sending the message.
+    /// * `prompt` - The text prompt to be added to the message.
     pub fn add_message(mut self, role: Roles, prompt: String) -> Request<Message> {
         let m = Message {
             role,
@@ -119,9 +121,14 @@ impl Request<Message> {
 }
 
 impl<T> Request<T> {
-    pub fn new(mdl: models::Model) -> Self {
+    /// Creates a new request for chat.
+    ///
+    /// ## Arguments
+    ///
+    /// * `model` - The model to be used for the request.
+    pub fn new(model: models::Model) -> Self {
         Self {
-            model: mdl,
+            model,
             messages: Vec::new(),
             max_tokens: 100,
             temperature: 0.0,
@@ -132,26 +139,53 @@ impl<T> Request<T> {
         }
     }
 
+    /// Returns a request with the added message.
+    ///
+    /// ## Arguments
+    ///
+    /// * `msg` - The message to be added to the request.
     pub fn with_message(mut self, msg: T) -> Request<T> {
         self.messages.push(msg);
         self
     }
 
+    /// Sets the max tokens for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `max` - The maximum number of tokens to be returned in the response.
     pub fn max_tokens(mut self, max: i64) -> Request<T> {
         self.max_tokens = max;
         self
     }
 
+    /// Sets the temperature for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `temp` - The temperature setting for the request. Used to control randomness.
     pub fn temperature(mut self, temp: f64) -> Request<T> {
         self.temperature = temp;
         self
     }
 
+    /// Sets the Top p for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `top` - The Top p setting for the request. Used to control randomness.
     pub fn top_p(mut self, top: f64) -> Request<T> {
         self.top_p = Some(top);
         self
     }
 
+    /// Sets the input parameters for the request, to check for prompt injection and PII.
+    ///
+    /// ## Arguments
+    ///
+    /// * `block_prompt_injection` - Determines whether to check for prompt injection in
+    /// the request.
+    /// * `pii` - Sets the string to check for PII and the replacement method.
     pub fn input(
         mut self,
         block_prompt_injection: bool,
@@ -183,6 +217,12 @@ impl<T> Request<T> {
         self
     }
 
+    /// Sets the output parameters for the request, to check for factuality and toxicity.
+    ///
+    /// ## Arguments
+    ///
+    /// * `check_factuality` - Determines whether to check for factuality in the response.
+    /// * `check_toxicity` - Determines whether to check for toxicity in the response.
     pub fn output(mut self, check_factuality: bool, check_toxicity: bool) -> Request<T> {
         match self.output {
             Some(ref mut x) => {
@@ -207,6 +247,14 @@ pub struct ResponseChoice {
     pub message: Message,
     pub index: i64,
     pub status: String,
+}
+
+/// Represents a message in the chat response.
+#[derive(Debug, Default, Deserialize, Serialize)]
+pub struct Message {
+    pub role: Roles,
+    pub content: String,
+    pub output: Option<String>,
 }
 
 /// Reponse returned from the completion response for chat.

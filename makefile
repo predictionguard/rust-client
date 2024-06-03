@@ -17,7 +17,7 @@ curl-chat:
 			} \
 		], \
 		"max_tokens": 1000, \
-		"temperature": 1.1 \
+		"temperature": 0.7 \
 	}'
 
 run-chat:
@@ -67,6 +67,9 @@ curl-chat-vision:
 		"max_tokens": 300 \
 	}'
 
+run-chat-vision:
+	cargo run --example chat_vision
+
 curl-completion:
 	curl -il -X POST https://api.predictionguard.com/completions \
      -H "x-api-key: ${PGKEY}" \
@@ -75,7 +78,7 @@ curl-completion:
 		"model": "Neural-Chat-7B", \
 		"prompt": "Will I lose my hair", \
 		"max_tokens": 1000, \
-		"temperature": 1.1 \
+		"temperature": 0.9 \
 	}'
 
 run-completion:
