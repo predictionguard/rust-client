@@ -9,7 +9,7 @@ pub const PATH: &str = "/completions";
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct RequestInput {
     pub(crate) block_prompt_injection: bool,
-    pub(crate) pii: Option<String>,
+    pub(crate) pii: Option<pii::InputMethod>,
     pub(crate) pii_replace_method: Option<pii::ReplaceMethod>,
 }
 
@@ -59,7 +59,7 @@ impl Request {
     pub fn input(
         mut self,
         block_prompt_injection: bool,
-        pii: Option<(String, pii::ReplaceMethod)>,
+        pii: Option<(pii::InputMethod, pii::ReplaceMethod)>,
     ) -> Request {
         match self.input {
             Some(ref mut x) => {

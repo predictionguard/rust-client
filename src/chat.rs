@@ -14,7 +14,7 @@ const TEXT_TYPE: &str = "text";
 #[derive(Debug, Deserialize, Serialize, Default)]
 pub struct RequestInput {
     block_prompt_injection: bool,
-    pii: Option<String>,
+    pii: Option<pii::InputMethod>,
     pii_replace_method: Option<pii::ReplaceMethod>,
 }
 
@@ -185,11 +185,11 @@ impl<T> Request<T> {
     ///
     /// * `block_prompt_injection` - Determines whether to check for prompt injection in
     /// the request.
-    /// * `pii` - Sets the string to check for PII and the replacement method.
+    /// * `pii` - Sets the `pii::InputMethod` and the `pii::ReplacementMethod`.
     pub fn input(
         mut self,
         block_prompt_injection: bool,
-        pii: Option<(String, pii::ReplaceMethod)>,
+        pii: Option<(pii::InputMethod, pii::ReplaceMethod)>,
     ) -> Request<T> {
         match self.input {
             Some(ref mut x) => {
@@ -236,7 +236,6 @@ impl<T> Request<T> {
                 })
             }
         };
-
         self
     }
 }
@@ -311,7 +310,7 @@ pub enum Roles {
 mod tests {
     use crate::chat;
     use crate::models;
-    use crate::pii::ReplaceMethod;
+    use crate::pii::{InputMethod, ReplaceMethod};
 
     use super::*;
 
@@ -354,7 +353,7 @@ mod tests {
             .max_tokens(2000)
             .top_p(12.1)
             .add_message(Roles::User, PROMPT.to_string(), IMAGE_URI.to_string())
-            .input(true, Some((PROMPT.to_string(), ReplaceMethod::Fake)))
+            .input(true, Some((InputMethod::Block, ReplaceMethod::Fake)))
             .output(true, true);
 
         assert_eq!(req.model, models::Model::Llava157bhf);
@@ -379,7 +378,7 @@ mod tests {
 
         let input = req.input.unwrap();
         assert_eq!(input.block_prompt_injection, true);
-        assert_eq!(input.pii, Some(PROMPT.to_string()));
+        assert_eq!(input.pii, Some(InputMethod::Block));
         assert_eq!(input.pii_replace_method, Some(ReplaceMethod::Fake));
 
         let output = req.output.unwrap();

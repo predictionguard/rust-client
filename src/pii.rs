@@ -4,6 +4,16 @@ use serde::{Deserialize, Serialize};
 /// Path to the PII endpoint.
 pub const PATH: &str = "/PII";
 
+/// Denotes the method to check for PII on inputs for completion and chat completions.
+#[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
+pub enum InputMethod {
+    #[serde(rename = "replace")]
+    Replace,
+    #[serde(rename = "block")]
+    #[default]
+    Block,
+}
+
 /// Denotes the different ways to replace any PII information that is found.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
 pub enum ReplaceMethod {
