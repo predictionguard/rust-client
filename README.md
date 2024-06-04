@@ -5,11 +5,13 @@
 
 ### Description
 
-This crate provides functionality developed to simplify interfacing with [Prediction Guard API](https://www.predictionguard.com/) in Rust.
+This crate provides functionality developed to simplify interfacing
+with [Prediction Guard API](https://www.predictionguard.com/) in Rust.
 
 ### Requirements
 
-To access the API, contact us [here](https://www.predictionguard.com/getting-started) to get an enterprise access token. You will need this access token to continue.
+To access the API, contact us [here](https://www.predictionguard.com/getting-started) to get an enterprise access token.
+You will need this access token to continue.
 
 ### Usage
 
@@ -17,7 +19,7 @@ To access the API, contact us [here](https://www.predictionguard.com/getting-sta
 use std::env;
 
 use pg_rust_client as pg_client;
-use pg_client::{client, completion};
+use pg_client::{client, chat, models};
 
 #[tokio::main]
 async fn main() {
@@ -25,15 +27,13 @@ async fn main() {
 
     let clt = client::Client::new(pg_env).expect("client value");
 
-    let req = completion::ChatRequest {
-        model: completion::Models::NeuralChat7B,
-        messages: vec![completion::Message {
-            role: completion::Roles::User,
-            content: "How do you feel about the world in general?".to_string(),
-        }],
-        max_tokens: 1000,
-        temperature: 1.1,
-    };
+    let req = chat::Request::<chat::Message>::new(models::Model::NeuralChat7B)
+        .add_message(
+            chat::Roles::User,
+            "How do you feel about the world in general?".to_string(),
+        )
+        .max_tokens(1000)
+        .temperature(0.8);
 
     let result = clt
         .generate_chat_completion(&req)
@@ -43,8 +43,8 @@ async fn main() {
     println!("\nchat completion response:\n\n {:?}", result);
 }
 ```
-Take a look at the `examples` directory for more examples.
 
+Take a look at the `examples` directory for more examples.
 
 ### Docs
 
@@ -58,7 +58,7 @@ You can find the Prediction Guard API docs on the Prediction Guard website.
 
 Once you have your api key you can use the `makefile` to run curl commands
 for the different api endpoints. For example, `make curl-injection` will connect to
-the injection endpoint and return the injection response. The `makefile` also allows you to run the different examples 
+the injection endpoint and return the injection response. The `makefile` also allows you to run the different examples
 such as `make run-injection` to run the injection example.
 
 #### Licensing
@@ -68,7 +68,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+    https://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -76,4 +76,5 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ```
+
 Copyright 2024 Prediction Guard

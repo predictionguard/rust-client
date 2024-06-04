@@ -1,10 +1,11 @@
-//! `chat_sse` sends a prompt to Prediction Guard and returns a single reponse of
-//! type [`completion::ChatResponseEvents`]. The event handler function is called
+//! `chat_sse` sends a prompt to Prediction Guard and returns a single response of
+//! type [`chat::Response`]. The event handler function is called
 //! every time a server event is received.
+extern crate prediction_guard as pg_client;
+
 use std::io::Write;
 
-extern crate prediction_guard as pg_client;
-use pg_client::{client, completion};
+use pg_client::{chat, client, models};
 
 #[tokio::main]
 async fn main() {
@@ -12,16 +13,13 @@ async fn main() {
 
     let clt = client::Client::new(pg_env).expect("client value");
 
-    let req = completion::ChatRequestEvents {
-        model: completion::Models::NeuralChat7B,
-        messages: vec![completion::Message {
-            role: completion::Roles::User,
-            content: "How do you feel about the world in general".to_string(),
-        }],
-        max_tokens: 1000,
-        temperature: 1.1,
-        stream: true,
-    };
+    let req = chat::Request::<chat::Message>::new(models::Model::NeuralChat7B)
+        .add_message(
+            chat::Roles::User,
+            "How do you feel about the world in general".to_string(),
+        )
+        .max_tokens(1000)
+        .temperature(0.85);
 
     let lock = std::io::stdout().lock();
     let mut buf = std::io::BufWriter::new(lock);

@@ -1,15 +1,17 @@
 //! Used to connect to the Prediction Guard API.
-use crate::{completion, factuality, injection, pii, toxicity, translate, Result};
+use std::{env, fmt, sync::Arc, time::Duration};
+
 use dotenvy;
 use eventsource_client::Client as EventClient;
 use eventsource_client::SSE;
 use futures::TryStreamExt;
 use reqwest::{
-    header::{HeaderMap, HeaderValue},
-    ClientBuilder, Response, StatusCode,
+    ClientBuilder,
+    header::{HeaderMap, HeaderValue}, Response, StatusCode,
 };
 use serde::{Deserialize, Serialize};
-use std::{env, fmt, sync::Arc, time::Duration};
+
+use crate::{chat, completion, embedding, factuality, injection, pii, Result, toxicity, translate};
 
 const USER_AGENT: &str = "Prediction Guard Rust Client";
 
@@ -69,6 +71,7 @@ impl PgEnvironment {
 pub struct Client {
     inner: Arc<ClientInner>,
 }
+
 #[derive(Debug)]
 struct ClientInner {
     server: String,
@@ -135,6 +138,35 @@ impl Client {
         Ok(Some(txt))
     }
 
+    /// Calls the embedding endpoint.
+    ///
+    /// ## Arguments:
+    ///
+    /// * `req` - An instance of [`embedding::Request`]
+    ///
+    /// Returns a [`embedding::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
+    pub async fn embedding(&self, req: &embedding::Request) -> Result<Option<embedding::Response>> {
+        let url = format!("{}{}", &self.inner.server, embedding::PATH);
+
+        let result = self
+            .inner
+            .http_client
+            .post(url)
+            .headers(self.inner.headers.clone())
+            .json(req)
+            .send()
+            .await?;
+
+        if result.status() != StatusCode::OK {
+            return Err(retrieve_error(result).await);
+        }
+
+        let embed_response = result.json::<embedding::Response>().await?;
+
+        Ok(Some(embed_response))
+    }
+
     /// Calls the generate completion endpoint.
     ///
     /// ## Arguments:
@@ -171,15 +203,15 @@ impl Client {
     ///
     /// ## Arguments:
     ///
-    /// * `req` - An instance of [`completion::ChatRequest`]
+    /// * `req` - An instance of [`chat::Request::<Message>`]
     ///
-    /// Returns an instance of [`completion::ChatResponse`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// Returns an instance of [`chat::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
     pub async fn generate_chat_completion(
         &self,
-        req: &completion::ChatRequest,
-    ) -> Result<Option<completion::ChatResponse>> {
-        let url = format!("{}{}", &self.inner.server, completion::CHAT_PATH);
+        req: &chat::Request<chat::Message>,
+    ) -> Result<Option<chat::Response>> {
+        let url = format!("{}{}", &self.inner.server, chat::PATH);
 
         let result = self
             .inner
@@ -194,7 +226,7 @@ impl Client {
             return Err(retrieve_error(result).await);
         }
 
-        let chat_response = result.json::<completion::ChatResponse>().await?;
+        let chat_response = result.json::<chat::Response>().await?;
 
         Ok(Some(chat_response))
     }
@@ -203,26 +235,26 @@ impl Client {
     ///
     /// ## Arguments:
     ///
-    /// * `req` - An instance of [`completion::ChatRequestEvents`]
+    /// * `req` - An instance of [`chat::Request::<Message>`]
     /// * `event_handler` - Event handler function that is called when a server side event is raised.
     ///
-    /// Returns an instance of [`completion::ChatResponseEvents`].
+    /// Returns an instance of [`chat::Response`].
     ///
     /// The generated text is returned via events from the server. The event handler function gets called
     /// every time the client receives an event response with data. Once the server terminates the events the call returns.
-    /// The entire [`completion::ChatResponseEvents`] response is then returned to the caller.
+    /// The entire [`chat::Response`] response is then returned to the caller.
     ///
     /// A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
     pub async fn generate_chat_completion_events<F>(
         &self,
-        mut req: completion::ChatRequestEvents,
+        mut req: chat::Request<chat::Message>,
         event_handler: &mut F,
-    ) -> Result<Option<completion::ChatResponseEvents>>
+    ) -> Result<Option<chat::ResponseEvents>>
     where
         F: FnMut(&String),
     {
-        let url = format!("{}{}", &self.inner.server, completion::CHAT_PATH);
+        let url = format!("{}{}", &self.inner.server, chat::PATH);
 
         req.stream = true;
 
@@ -250,16 +282,15 @@ impl Client {
                             }
 
                             // JSON Response
-                            let resp: completion::ChatResponseEvents =
-                                match serde_json::from_str(&evt.data) {
-                                    Ok(v) => v,
-                                    Err(e) => {
-                                        return Err(Box::from(ApiError {
-                                            http_status: 500,
-                                            error: format!("error parsing stream response: {}", e),
-                                        }))
-                                    }
-                                };
+                            let resp: chat::ResponseEvents = match serde_json::from_str(&evt.data) {
+                                Ok(v) => v,
+                                Err(e) => {
+                                    return Err(Box::from(ApiError {
+                                        http_status: 500,
+                                        error: format!("error parsing stream response: {}", e),
+                                    }));
+                                }
+                            };
 
                             match resp.choices {
                                 Some(ref choices) => {
@@ -276,7 +307,7 @@ impl Client {
                                     let msg = choices[0]
                                         .delta
                                         .clone()
-                                        .unwrap_or(completion::ChatEventsDelta {
+                                        .unwrap_or(chat::EventsDelta {
                                             content: Some("".to_string()),
                                         })
                                         .content;
@@ -296,6 +327,38 @@ impl Client {
         }
 
         Ok(None)
+    }
+
+    /// Calls the generate chat completion endpoint for chat vision.
+    ///
+    /// ## Arguments:
+    ///
+    /// * `req` - An instance of [`chat::Request::<MessageVision>`]
+    ///
+    /// Returns an instance of [`chat::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
+    pub async fn generate_chat_vision(
+        &self,
+        req: &chat::Request<chat::MessageVision>,
+    ) -> Result<Option<chat::Response>> {
+        let url = format!("{}{}", &self.inner.server, chat::PATH);
+
+        let result = self
+            .inner
+            .http_client
+            .post(url)
+            .headers(self.inner.headers.clone())
+            .json(req)
+            .send()
+            .await?;
+
+        if result.status() != StatusCode::OK {
+            return Err(retrieve_error(result).await);
+        }
+
+        let chat_response = result.json::<chat::Response>().await?;
+
+        Ok(Some(chat_response))
     }
 
     /// Calls the factuality check endpoint.

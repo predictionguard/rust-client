@@ -15,7 +15,18 @@ pub struct Check {
 /// Request type for the toxicity endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Request {
-    pub text: String,
+    pub(crate) text: String,
+}
+
+impl Request {
+    /// Creates a new request for toxicity.
+    ///
+    /// ## Arguments
+    ///
+    /// * `text` - The text to be analyzed.
+    pub fn new(text: String) -> Request {
+        Self { text }
+    }
 }
 
 /// Response type for the toxicity endpoint.
