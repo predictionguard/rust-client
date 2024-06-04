@@ -45,7 +45,12 @@ pub struct Request {
 }
 
 impl Request {
-    /// Creates an instance of pii Request.
+    /// Creates a new request for PII checks.
+    ///
+    /// ## Arguments
+    ///
+    /// * `prompt` - The text to be analyzed.
+    /// * `replace_method` - The method for replacing PII information.
     pub fn new(prompt: String, replace: bool, replace_method: ReplaceMethod) -> Request {
         Self {
             prompt,

@@ -15,6 +15,13 @@ pub struct Request {
 }
 
 impl Request {
+    /// Creates a new request for translation.
+    ///
+    /// ## Arguments
+    ///
+    /// * `text` - The text to be translated.
+    /// * `source_lang` - The language of the text to be translated.
+    /// * `target_lang` - The language to translate the text to.
     pub fn new(text: String, source_lang: Language, target_lang: Language) -> Request {
         Self {
             text,

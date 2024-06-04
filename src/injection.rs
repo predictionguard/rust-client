@@ -12,6 +12,12 @@ pub struct Request {
 }
 
 impl Request {
+    /// Creates a new request for injection detection.
+    ///
+    /// ## Arguments
+    ///
+    /// * `prompt` - The text to be analyzed.
+    /// * `detect` - Enables detection in the request.
     pub fn new(prompt: String, detect: bool) -> Request {
         Self { prompt, detect }
     }

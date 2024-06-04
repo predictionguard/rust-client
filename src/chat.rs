@@ -1,5 +1,5 @@
-//! Data types that are used for the chat endpoints, including chat and chat
-//! events.
+//! Data types that are used for the chat endpoints, including chat completions, chat vision
+//! and chat events.
 use serde::{self, Deserialize, Serialize};
 
 use crate::{models, pii};
@@ -72,7 +72,7 @@ impl Request<MessageVision> {
     ///
     /// * `role` - The role of the user sending the message.
     /// * `prompt` - The text prompt to be sent along with the image.
-    /// * `image_uri` -  data URI for base64 encoded image e.g. data:image/jpeg;base64,<data>
+    /// * `image_uri` -  data URI for base64 encoded image e.g. data:image/jpeg;base64,data
     pub fn add_message(
         mut self,
         role: Roles,
@@ -308,7 +308,6 @@ pub enum Roles {
 
 #[cfg(test)]
 mod tests {
-    use crate::chat;
     use crate::models;
     use crate::pii::{InputMethod, ReplaceMethod};
 
@@ -319,7 +318,7 @@ mod tests {
 
     #[test]
     fn chat_request() {
-        let req = chat::Request::<Message>::new(models::Model::NeuralChat7B)
+        let req = Request::<Message>::new(models::Model::NeuralChat7B)
             .temperature(0.1)
             .max_tokens(1000)
             .top_p(12.6)
@@ -348,7 +347,7 @@ mod tests {
 
     #[test]
     fn chat_request_vision() {
-        let req = chat::Request::<MessageVision>::new(models::Model::Llava157bhf)
+        let req = Request::<MessageVision>::new(models::Model::Llava157bhf)
             .temperature(0.2)
             .max_tokens(2000)
             .top_p(12.1)

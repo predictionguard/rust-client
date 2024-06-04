@@ -19,6 +19,11 @@ pub struct Request {
 }
 
 impl Request {
+    /// Creates a new request for toxicity.
+    ///
+    /// ## Arguments
+    ///
+    /// * `text` - The text to be analyzed.
     pub fn new(text: String) -> Request {
         Self { text }
     }

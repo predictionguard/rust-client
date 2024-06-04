@@ -12,6 +12,12 @@ pub struct Request {
 }
 
 impl Request {
+    /// Creates a new request for factuality detection.
+    ///
+    /// ## Arguments
+    ///
+    /// * `reference` - The reference text to be used in the factuality check.
+    /// * `text` - The text to check for factuality.
     pub fn new(reference: String, text: String) -> Request {
         Self { reference, text }
     }

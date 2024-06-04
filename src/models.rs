@@ -1,6 +1,7 @@
+//! The models that are available to use.
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-/// The different models that can be used in the completion endpoints.
+/// The different models that can be used.
 #[derive(Debug, PartialEq, Default)]
 pub enum Model {
     Hermes2ProLlama38B,

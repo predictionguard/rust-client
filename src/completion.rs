@@ -6,6 +6,7 @@ use crate::{models, pii};
 /// Path to the completions endpoint.
 pub const PATH: &str = "/completions";
 
+/// Allows to request PII check and Injection check on the inputs in the chat request.
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct RequestInput {
     pub(crate) block_prompt_injection: bool,
@@ -13,6 +14,7 @@ pub struct RequestInput {
     pub(crate) pii_replace_method: Option<pii::ReplaceMethod>,
 }
 
+/// Allows for checking the output of the request for factuality and toxicity.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RequestOutput {
     pub factuality: bool,
@@ -33,6 +35,12 @@ pub struct Request {
 }
 
 impl Request {
+    /// Creates a new request for completion.
+    ///
+    /// ## Arguments
+    ///
+    /// * `model` - The model to be used for the request.
+    /// * `prompt` - The prompt to be used for the completion request.
     pub fn new(model: models::Model, prompt: String) -> Self {
         Self {
             model,
@@ -41,21 +49,43 @@ impl Request {
         }
     }
 
+    /// Sets the max tokens for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `max` - The maximum number of tokens to be returned in the response.
     pub fn max_tokens(mut self, max: i64) -> Request {
         self.max_tokens = Some(max);
         self
     }
 
+    /// Sets the temperature for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `temp` - The temperature setting for the request. Used to control randomness.
     pub fn temperature(mut self, temp: f64) -> Request {
         self.temperature = Some(temp);
         self
     }
 
+    /// Sets the Top p for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `top` - The Top p setting for the request. Used to control randomness.
     pub fn top_p(mut self, top: f64) -> Request {
         self.top_p = Some(top);
         self
     }
 
+    /// Sets the input parameters for the request, to check for prompt injection and PII.
+    ///
+    /// ## Arguments
+    ///
+    /// * `block_prompt_injection` - Determines whether to check for prompt injection in
+    /// the request.
+    /// * `pii` - Sets the `pii::InputMethod` and the `pii::ReplacementMethod`.
     pub fn input(
         mut self,
         block_prompt_injection: bool,
@@ -87,6 +117,12 @@ impl Request {
         self
     }
 
+    /// Sets the output parameters for the request, to check for factuality and toxicity.
+    ///
+    /// ## Arguments
+    ///
+    /// * `check_factuality` - Determines whether to check for factuality in the response.
+    /// * `check_toxicity` - Determines whether to check for toxicity in the response.
     pub fn output(mut self, check_factuality: bool, check_toxicity: bool) -> Request {
         match self.output {
             Some(ref mut x) => {
