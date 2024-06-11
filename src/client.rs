@@ -292,38 +292,28 @@ impl Client {
                                 }
                             };
 
-                            match resp.choices {
-                                Some(ref choices) => {
-                                    if choices.is_empty() {
-                                        // No data to stream or Done
-                                        continue;
-                                    }
-
-                                    // Finish Reason == Stop That is the final Response.
-                                    if choices[0].finish_reason == Some("stop".to_string()) {
-                                        return Ok(Some(resp));
-                                    }
-
-                                    let msg = choices[0]
-                                        .delta
-                                        .clone()
-                                        .unwrap_or(chat::EventsDelta {
-                                            content: Some("".to_string()),
-                                        })
-                                        .content;
-                                    event_handler(&msg.unwrap_or("".to_string()));
-                                }
-                                None => return Ok(None),
+                            if resp.choices.is_empty() {
+                                // No data to stream or Done
+                                continue;
                             }
+
+                            // Finish Reason == Stop That is the final Response.
+                            if resp.choices[0].finish_reason == *"stop" {
+                                return Ok(Some(resp));
+                            }
+
+                            let msg = resp.choices[0].delta.clone().content;
+                            event_handler(&msg);
                         }
                     }
                 }
+
                 Ok(None) => continue,
                 Err(e) => match e {
                     eventsource_client::Error::StreamClosed => break,
                     _ => return Err(stream_error_into_api_err(e).await),
                 },
-            };
+            }
         }
 
         Ok(None)

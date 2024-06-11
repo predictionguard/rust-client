@@ -84,21 +84,24 @@ impl Request {
 }
 
 /// Contains the embedded data information for the response.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Default, Deserialize, Debug)]
+#[serde(default)]
 pub struct Data {
-    pub status: Option<String>,
+    pub status: String,
     pub index: i64,
-    pub object: Option<String>,
-    pub embedding: Option<Vec<f64>>,
+    pub object: String,
+    #[serde(default)]
+    pub embedding: Vec<f64>,
 }
 
 /// The response returned from the embedding endpoint.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Default, Deserialize, Debug)]
+#[serde(default)]
 pub struct Response {
-    pub id: Option<String>,
-    pub object: Option<String>,
+    pub id: String,
+    pub object: String,
     pub created: i64,
-    #[serde(deserialize_with = "models::deserialize_models_option")]
-    pub model: Option<models::Model>,
-    pub data: Option<Vec<Data>>,
+    #[serde(deserialize_with = "models::deserialize_models")]
+    pub model: models::Model,
+    pub data: Vec<Data>,
 }

@@ -28,16 +28,9 @@ pub enum ReplaceMethod {
     Fake,
 }
 
-/// Represents individual check from the factuality endpoint.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Check {
-    pub new_prompt: String,
-    pub index: i64,
-    pub status: String,
-}
-
 /// Request type for the PII detection endpoint.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
 pub struct Request {
     pub(crate) prompt: String,
     pub(crate) replace: bool,
@@ -59,11 +52,22 @@ impl Request {
         }
     }
 }
+
+/// Represents individual check from the factuality endpoint.
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
+pub struct Check {
+    pub new_prompt: String,
+    pub index: i64,
+    pub status: String,
+}
+
 /// Response type for the PII detection endpoint.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
 pub struct Response {
-    pub id: Option<String>,
-    pub object: Option<String>,
-    pub created: Option<String>,
-    pub checks: Option<Vec<Check>>,
+    pub id: String,
+    pub object: String,
+    pub created: String,
+    pub checks: Vec<Check>,
 }

@@ -120,16 +120,14 @@ mod tests {
 
             println!("\n\ncompletion response:\n{:?}\n\n", r);
 
-            assert!(!r.id.expect("response.id exist").is_empty());
-            assert!(!r.object.expect("response.object exist").is_empty());
-            assert!(r.created.expect("response.choices exist") > 0);
+            assert!(!r.id.is_empty());
+            assert!(!r.object.is_empty());
+            assert!(r.created > 0);
 
-            let choice = r.choices.expect("choices to exit");
-            assert!(!choice[0].text.is_empty());
-            assert!(!choice[0].status.is_empty());
-            assert!(!choice[0].status.is_empty());
-            assert!(choice[0].index >= 0);
-            assert_eq!(choice[0].model, models::Model::NeuralChat7B);
+            assert!(!r.choices[0].text.is_empty());
+            assert!(!r.choices[0].status.is_empty());
+            assert!(r.choices[0].index >= 0);
+            assert_eq!(r.choices[0].model, models::Model::NeuralChat7B);
         });
     }
 
@@ -171,33 +169,16 @@ mod tests {
 
             println!("\n\nchat completion response:\n{:?}\n\n", r);
 
-            assert!(!r.id.expect("response.id exist").is_empty());
-            assert!(!r.object.expect("response.object exist").is_empty());
-            assert!(r.created.expect("response.choices exist") > 0);
-            assert_eq!(
-                r.model.expect("model to exist"),
-                models::Model::NeuralChat7B
-            );
+            assert!(!r.id.is_empty());
+            assert!(!r.object.is_empty());
+            assert!(r.created > 0);
+            assert_eq!(r.model, models::Model::NeuralChat7B);
 
-            let choices = r.choices.expect("choices to exist");
-            assert!(!choices[0]
-                .generated_text
-                .as_ref()
-                .expect("generated_text to exist")
-                .is_empty());
-            assert!(choices[0].index >= 0);
-            assert!(!choices[0]
-                .finish_reason
-                .as_ref()
-                .expect("finish_reason to exist")
-                .is_empty());
+            assert!(!r.choices[0].generated_text.is_empty());
+            assert!(r.choices[0].index >= 0);
+            assert!(!r.choices[0].finish_reason.is_empty());
 
-            assert!(choices[0]
-                .delta
-                .as_ref()
-                .expect("delta to exist")
-                .content
-                .is_none());
+            assert!(r.choices[0].delta.content.is_empty());
         });
     }
 
@@ -238,20 +219,16 @@ mod tests {
 
             println!("\n\nchat completion response:\n{:?}\n\n", r);
 
-            assert!(!r.id.expect("response.id exist").is_empty());
-            assert!(!r.object.expect("response.object exist").is_empty());
-            assert!(r.created.expect("response.choices exist") > 0);
-            assert_eq!(
-                r.model.expect("model to exist"),
-                models::Model::NeuralChat7B
-            );
+            assert!(!r.id.is_empty());
+            assert!(!r.object.is_empty());
+            assert!(r.created > 0);
+            assert_eq!(r.model, models::Model::NeuralChat7B);
 
-            let choices = r.choices.expect("choices to exist");
-            assert!(!choices.is_empty());
+            assert!(!r.choices.is_empty());
 
-            assert!(choices[0].index >= 0);
-            assert_eq!(choices[0].message.role, chat::Roles::Assistant);
-            assert!(!choices[0].message.content.is_empty());
+            assert!(r.choices[0].index >= 0);
+            assert_eq!(r.choices[0].message.role, chat::Roles::Assistant);
+            assert!(!r.choices[0].message.content.is_empty());
         });
     }
 
@@ -296,18 +273,17 @@ mod tests {
 
             println!("\n\nchat completion response:\n{:?}\n\n", r);
 
-            assert!(!r.id.expect("response.id exist").is_empty());
-            assert!(!r.object.expect("response.object exist").is_empty());
-            assert!(r.created.expect("response.choices exist") > 0);
-            assert_eq!(r.model.expect("model to exist"), models::Model::Llava157bhf);
+            assert!(!r.id.is_empty());
+            assert!(!r.object.is_empty());
+            assert!(r.created > 0);
+            assert_eq!(r.model, models::Model::Llava157bhf);
 
-            let choices = r.choices.expect("choices to exist");
-            assert!(!choices.is_empty());
+            assert!(!r.choices.is_empty());
 
-            assert!(choices[0].index >= 0);
-            assert_eq!(choices[0].status, "success");
-            assert_eq!(choices[0].message.role, chat::Roles::Assistant);
-            assert!(!choices[0].message.content.is_empty());
+            assert!(r.choices[0].index >= 0);
+            assert_eq!(r.choices[0].status, "success");
+            assert_eq!(r.choices[0].message.role, chat::Roles::Assistant);
+            assert!(!r.choices[0].message.content.is_empty());
         });
     }
 
@@ -349,11 +325,11 @@ mod tests {
 
             println!("\n\nfactuality response:\n{:?}\n\n", r);
 
-            assert!(!r.id.expect("response.id exist").is_empty());
-            assert!(!r.object.expect("response.object exist").is_empty());
-            assert!(r.created.expect("response.created exist") > 0);
+            assert!(!r.id.is_empty());
+            assert!(!r.object.is_empty());
+            assert!(r.created > 0);
 
-            let checks = r.checks.expect("choices to exist");
+            let checks = r.checks;
             assert!(!checks.is_empty());
             assert!(checks[0].score > 0.0);
             assert!(checks[0].index >= 0);
@@ -396,15 +372,14 @@ mod tests {
 
             println!("\n\ninjection response:\n{:?}\n\n", r);
 
-            assert!(!r.id.expect("response.id exist").is_empty());
-            assert!(!r.object.expect("response.object exist").is_empty());
-            assert!(!r.created.expect("response.choices exist").is_empty());
+            assert!(!r.id.is_empty());
+            assert!(!r.object.is_empty());
+            assert!(!r.created.is_empty());
 
-            let checks = r.checks.expect("choices to exist");
-            assert!(!checks.is_empty());
-            assert!(checks[0].probability > 0.0);
-            assert!(checks[0].index >= 0);
-            assert!(!checks[0].status.is_empty());
+            assert!(!r.checks.is_empty());
+            assert!(r.checks[0].probability > 0.0);
+            assert!(r.checks[0].index >= 0);
+            assert!(!r.checks[0].status.is_empty());
         });
     }
 
@@ -444,16 +419,15 @@ mod tests {
 
             println!("\n\npii response:\n{:?}\n\n", r);
 
-            assert!(!r.id.expect("response.id exist").is_empty());
-            assert!(!r.object.expect("response.object exist").is_empty());
-            assert!(!r.created.expect("response.created exist").is_empty());
+            assert!(!r.id.is_empty());
+            assert!(!r.object.is_empty());
+            assert!(!r.created.is_empty());
 
-            let checks = r.checks.expect("choices to exist");
-            assert!(!checks.is_empty());
+            assert!(!r.checks.is_empty());
 
-            assert!(!checks[0].new_prompt.is_empty());
-            assert!(checks[0].index >= 0);
-            assert!(!checks[0].status.is_empty());
+            assert!(!r.checks[0].new_prompt.is_empty());
+            assert!(r.checks[0].index >= 0);
+            assert!(!r.checks[0].status.is_empty());
         });
     }
 
@@ -491,16 +465,15 @@ mod tests {
 
             println!("\n\ntoxicity response:\n{:?}\n\n", r);
 
-            assert!(!r.id.expect("response.id exist").is_empty());
-            assert!(!r.object.expect("response.object exist").is_empty());
-            assert!(r.created.expect("response.choices exist") >= 0);
+            assert!(!r.id.is_empty());
+            assert!(!r.object.is_empty());
+            assert!(r.created >= 0);
 
-            let checks = r.checks.expect("checks value to exist");
-            assert!(!checks.is_empty());
+            assert!(!r.checks.is_empty());
 
-            assert!(checks[0].score >= 0.0);
-            assert!(checks[0].index >= 0);
-            assert!(!checks[0].status.is_empty());
+            assert!(r.checks[0].score >= 0.0);
+            assert!(r.checks[0].index >= 0);
+            assert!(!r.checks[0].status.is_empty());
         });
     }
 
@@ -540,21 +513,20 @@ mod tests {
 
             println!("\n\ntranslation response:\n{:?}\n\n", r);
 
-            assert!(!r.id.expect("response.id exist").is_empty());
-            assert!(!r.object.expect("response.object exist").is_empty());
+            assert!(!r.id.is_empty());
+            assert!(!r.object.is_empty());
             assert!(r.created >= 0);
 
-            assert!(r.best_translation.is_some());
+            assert!(!r.best_translation.is_empty());
             assert_ne!(r.best_score, 0.0);
-            assert!(r.best_translation_model.is_some());
+            assert!(!r.best_translation_model.is_empty());
 
-            assert!(r.translations.is_some());
-            let t = r.translations.expect("translation vector");
+            assert!(!r.translations.is_empty());
 
-            assert_ne!(t[0].score, 0.0);
-            assert!(t[0].translation.is_some());
-            assert!(t[0].model.is_some());
-            assert!(t[0].status.is_some());
+            assert_ne!(r.translations[0].score, 0.0);
+            assert!(!r.translations[0].translation.is_empty());
+            assert!(!r.translations[0].model.is_empty());
+            assert!(!r.translations[0].status.is_empty());
         });
     }
 
@@ -593,25 +565,15 @@ mod tests {
 
             println!("\n\nembedding response:\n{:?}\n\n", r);
 
-            assert!(!r.id.expect("response.id exist").is_empty());
-            assert!(!r.object.expect("response.object exist").is_empty());
-            assert_eq!(
-                r.model.expect("response.model exist"),
-                models::Model::BridgetowerLargeItmMlmItc
-            );
+            assert!(!r.id.is_empty());
+            assert!(!r.object.is_empty());
+            assert_eq!(r.model, models::Model::BridgetowerLargeItmMlmItc);
             assert!(r.created > 0);
 
-            let data = r.data.expect("data to exit");
-            assert!(!&data[0].status.as_ref().expect("status field").is_empty());
-
-            assert!(!&data[0].object.as_ref().expect("object field").is_empty());
-            assert!(data[0].index >= 0);
-
-            assert!(!&data[0]
-                .embedding
-                .as_ref()
-                .expect("embedding data")
-                .is_empty());
+            assert!(!&r.data[0].status.is_empty());
+            assert!(!&r.data[0].object.is_empty());
+            assert!(r.data[0].index >= 0);
+            assert!(!&r.data[0].embedding.is_empty());
         });
     }
 
@@ -622,7 +584,7 @@ mod tests {
     const INJECTION_RESPONSE: &str = r#"{"checks":[{"probability":0.5,"index":0,"status":"success"}],"created":"1716927842","id":"injection-k7yi24csvD3gqVB1ul4niKfJpoSL8rDr","object":"injection_check"}"#;
     const PII_RESPONSE: &str = r#"{ "id": "pii-sqq812J5VlXRxp6Fpu3PXkV33rOJnwTv", "object": "pii_check", "created": "1716928267", "checks": [{ "new_prompt": "My email is oyo@yukmt.fjw", "index": 0, "status": "success" }]}"#;
     const TOXICITY_RESPONSE: &str = r#"{"checks":[{"score":0.7072361707687378,"index":0,"status":"success"}],"created":1716928765,"id":"toxi-T9KOKkKxBBXEHVoDkzoC0uYNpTbvx","object":"toxicity_check"}"#;
-    const TRANSLATE_RESPONSE: &str = r#"{"translations":[{"score":-100,"translation":"","model":"openai","status":"error: couldn’t get translation"},{"score":0.5008216500282288,"translation":"La lluvia en España se queda principalmente en la llanura","model":"deepl","status":"success"},{"score":0.5381202101707458,"translation":"La lluvia en España permanece principalmente en la llanura","model":"google","status":"success"},{"score":0.4843788146972656,"translation":"La lluvia en España se queda principalmente en la llanura.","model":"nous_hermes_llama2","status":"success"}],"best_translation":"La lluvia en España permanece principalmente en la llanura","best_score":0.5381202101707458,"best_translation_model":"google","created":1716930759,"id":"translation-8df720f17ab344a08b56a473fc63fd8b","object":"translation"}"#;
+    const TRANSLATE_RESPONSE: &str = r#"{"translations":[{"score":0.5008216500282288,"translation":"La lluvia en España se queda principalmente en la llanura","model":"deepl","status":"success"},{"score":0.5381202101707458,"translation":"La lluvia en España permanece principalmente en la llanura","model":"google","status":"success"},{"score":0.4843788146972656,"translation":"La lluvia en España se queda principalmente en la llanura.","model":"nous_hermes_llama2","status":"success"}],"best_translation":"La lluvia en España permanece principalmente en la llanura","best_score":0.5381202101707458,"best_translation_model":"google","created":1716930759,"id":"translation-8df720f17ab344a08b56a473fc63fd8b","object":"translation"}"#;
     const EMBEDDING_RESPONSE: &str = r#"{ "id": "emb-DMC7M45FkuwJ9ihyP23RKrC6hUXwg", "object": "embedding_batch", "created": 1717015553, "model": "bridgetower-large-itm-mlm-itc", "data": [{"status": "success","index": 0,"object": "embedding",
           "embedding": [
             0.028302032500505447,

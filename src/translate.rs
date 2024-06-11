@@ -32,24 +32,26 @@ impl Request {
 }
 
 /// Response type used for the translate endpoint.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
 pub struct Response {
-    pub id: Option<String>,
-    pub object: Option<String>,
+    pub id: String,
+    pub object: String,
     pub created: i64,
-    pub best_translation: Option<String>,
+    pub best_translation: String,
     pub best_score: f64,
-    pub best_translation_model: Option<String>,
-    pub translations: Option<Vec<Translation>>,
+    pub best_translation_model: String,
+    pub translations: Vec<Translation>,
 }
 
 /// Represents an individual translation from the translate endpoint.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
 pub struct Translation {
     pub score: f64,
-    pub translation: Option<String>,
-    pub model: Option<String>,
-    pub status: Option<String>,
+    pub translation: String,
+    pub model: String,
+    pub status: String,
 }
 
 /// Languages supported by the translate endpoint.

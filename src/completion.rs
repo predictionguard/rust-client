@@ -141,7 +141,8 @@ impl Request {
 }
 
 /// Represents a choice in the base completion response.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
 pub struct Choice {
     pub text: String,
     pub index: i64,
@@ -151,10 +152,11 @@ pub struct Choice {
 }
 
 /// Completion response for the base completetion endpoint.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
 pub struct Response {
-    pub id: Option<String>,
-    pub object: Option<String>,
-    pub created: Option<i64>,
-    pub choices: Option<Vec<Choice>>,
+    pub id: String,
+    pub object: String,
+    pub created: i64,
+    pub choices: Vec<Choice>,
 }
