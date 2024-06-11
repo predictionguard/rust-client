@@ -248,7 +248,7 @@ impl Client {
     /// is considered an error.
     pub async fn generate_chat_completion_events<F>(
         &self,
-        mut req: chat::Request<chat::Message>,
+        req: &mut chat::Request<chat::Message>,
         event_handler: &mut F,
     ) -> Result<Option<chat::ResponseEvents>>
     where

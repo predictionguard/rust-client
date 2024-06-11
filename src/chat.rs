@@ -149,6 +149,18 @@ impl<T> Request<T> {
         self
     }
 
+    /// Returns a request with the vector of messages.
+    ///
+    /// ## Arguments
+    ///
+    /// * `messages` - The messages to be added to the request.
+    pub fn with_messages(mut self, messages: Vec<T>) -> Request<T> {
+        for m in messages.into_iter() {
+            self.messages.push(m);
+        }
+        self
+    }
+
     /// Sets the max tokens for the request.
     ///
     /// ## Arguments
