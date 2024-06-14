@@ -7,14 +7,14 @@ use crate::models;
 pub(crate) const PATH: &str = "/embeddings";
 
 /// Input data type to contain either text or a base64 encoded image.
-#[derive(Serialize, Default, Deserialize, Debug)]
+#[derive(Serialize, Clone, Default, Deserialize, Debug)]
 pub struct Input {
     text: Option<String>,
     image: Option<String>,
 }
 
 /// Request data type used for the embedding endpoint.
-#[derive(Serialize, Default, Deserialize, Debug)]
+#[derive(Serialize, Clone, Default, Deserialize, Debug)]
 pub struct Request {
     pub(crate) input: Vec<Input>,
     #[serde(deserialize_with = "models::deserialize_models")]
@@ -29,55 +29,37 @@ impl Request {
     ///
     /// * `model` - The model to be used for the request.
     /// * `text` - The text used to generate the embedding.
-    /// * `image_base64` - A base64 encoded image used to generate the embedding.
-    pub fn new(
-        model: models::Model,
-        text: Option<String>,
-        image_base64: Option<String>,
-    ) -> Request {
+    /// * `image` - A base64 encoded image used to generate the embedding.
+    pub async fn new(model: models::Model, text: Option<String>, image: Option<String>) -> Request {
         let mut req = Self {
             model,
             ..Default::default()
         };
 
-        if text.is_some() {
-            req.input.push(Input {
-                text,
-                ..Default::default()
-            });
-            return req;
-        }
-
-        if image_base64.is_some() {
-            req.input.push(Input {
-                image: image_base64,
-                ..Default::default()
-            });
-        }
+        req.input.push(Input { text, image });
         req
     }
 
-    /// Adds input data to the request. Either text or image is specified.
-    /// If both are specified only text will be added.
+    /// Adds input data to the request.
     ///
     /// ## Arguments
     ///
     /// * `text` - The text used to generate the embedding.
-    /// * `image_base64` - A base64 encoded image used to generate the embedding.
-    pub fn add_input(mut self, text: Option<String>, image_base64: Option<String>) -> Self {
-        if text.is_some() {
-            self.input.push(Input {
-                text,
-                ..Default::default()
-            });
-            return self;
-        }
+    /// * `image` - A base64 encoded image used to generate the embedding.
+    pub async fn add_input(mut self, text: Option<String>, image: Option<String>) -> Self {
+        self.input.push(Input { text, image });
 
-        if image_base64.is_some() {
-            self.input.push(Input {
-                image: image_base64,
-                ..Default::default()
-            });
+        self
+    }
+
+    /// Adds a list of inputs to the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `inputs` - A list of inputs to add.
+    pub fn add_inputs(mut self, inputs: Vec<Input>) -> Self {
+        for i in inputs {
+            self.input.push(i);
         }
         self
     }

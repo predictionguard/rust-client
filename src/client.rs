@@ -12,6 +12,7 @@ use reqwest::{
 use serde::{Deserialize, Serialize};
 
 use crate::{chat, completion, embedding, factuality, injection, pii, Result, toxicity, translate};
+use crate::built_info;
 
 const USER_AGENT: &str = "Prediction Guard Rust Client";
 
@@ -87,11 +88,12 @@ impl Client {
     ///
     ///  * `pg_env` - the prediction guard environment to connect to.
     pub fn new(pg_env: PgEnvironment) -> Result<Self> {
+        let user_agent = format!("{} v{}", USER_AGENT, built_info::PKG_VERSION);
         let http = ClientBuilder::new()
             .connect_timeout(Duration::new(15, 0))
             .read_timeout(Duration::new(30, 0))
             .timeout(Duration::new(45, 0))
-            .user_agent(USER_AGENT)
+            .user_agent(user_agent)
             .build()?;
 
         let header_key = match HeaderValue::from_str(&pg_env.key) {

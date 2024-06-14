@@ -30,11 +30,16 @@
 //! ```
 //! See the `/examples` directory for more examples.
 //!
+//!
+// The file has been placed there by the build script.
+
+pub mod built_info;
 pub mod chat;
 pub mod client;
 pub mod completion;
 pub mod embedding;
 pub mod factuality;
+pub mod image;
 pub mod injection;
 pub mod models;
 pub mod pii;
@@ -140,7 +145,7 @@ mod tests {
 
         let clt = client::Client::new(pg_env).expect("client value");
 
-        let req = chat::Request::<chat::Message>::new(models::Model::NeuralChat7B)
+        let mut req = chat::Request::<chat::Message>::new(models::Model::NeuralChat7B)
             .add_message(
                 chat::Roles::User,
                 "How do you feel about the world in general".to_string(),
@@ -160,7 +165,7 @@ mod tests {
             };
 
             let result = clt
-                .generate_chat_completion_events(req, &mut callback)
+                .generate_chat_completion_events(&mut req, &mut callback)
                 .await
                 .expect("error from generate chat completion");
 
@@ -549,13 +554,14 @@ mod tests {
 
         let clt = client::Client::new(pg_env).expect("client value");
 
-        let req = embedding::Request::new(
-            models::Model::BridgetowerLargeItmMlmItc,
-            Some("Skyline with Airplane".to_string()),
-            None,
-        );
-
         tokio_test::block_on(async {
+            let req = embedding::Request::new(
+                models::Model::BridgetowerLargeItmMlmItc,
+                Some("Skyline with Airplane".to_string()),
+                None,
+            )
+            .await;
+
             let result = clt.embedding(&req).await.expect("error from embedding");
 
             embed_mock.assert();
