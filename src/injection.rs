@@ -24,7 +24,8 @@ impl Request {
 }
 
 /// Represents an individual check on the injection endpoint.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
 pub struct Check {
     pub probability: f64,
     pub index: i64,
@@ -32,10 +33,11 @@ pub struct Check {
 }
 
 /// Response type for the injection endpoint.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
 pub struct Response {
-    pub id: Option<String>,
-    pub object: Option<String>,
-    pub created: Option<String>,
-    pub checks: Option<Vec<Check>>,
+    pub id: String,
+    pub object: String,
+    pub created: String,
+    pub checks: Vec<Check>,
 }

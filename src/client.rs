@@ -12,6 +12,7 @@ use reqwest::{
 use serde::{Deserialize, Serialize};
 
 use crate::{chat, completion, embedding, factuality, injection, pii, Result, toxicity, translate};
+use crate::built_info;
 
 const USER_AGENT: &str = "Prediction Guard Rust Client";
 
@@ -87,11 +88,13 @@ impl Client {
     ///
     ///  * `pg_env` - the prediction guard environment to connect to.
     pub fn new(pg_env: PgEnvironment) -> Result<Self> {
+        let user_agent = format!("{} v{}", USER_AGENT, built_info::PKG_VERSION);
+
         let http = ClientBuilder::new()
             .connect_timeout(Duration::new(15, 0))
             .read_timeout(Duration::new(30, 0))
             .timeout(Duration::new(45, 0))
-            .user_agent(USER_AGENT)
+            .user_agent(user_agent)
             .build()?;
 
         let header_key = match HeaderValue::from_str(&pg_env.key) {
@@ -248,7 +251,7 @@ impl Client {
     /// is considered an error.
     pub async fn generate_chat_completion_events<F>(
         &self,
-        mut req: chat::Request<chat::Message>,
+        req: &mut chat::Request<chat::Message>,
         event_handler: &mut F,
     ) -> Result<Option<chat::ResponseEvents>>
     where
@@ -260,8 +263,10 @@ impl Client {
 
         let body = serde_json::to_string(&req)?;
 
+        let user_agent = format!("{} v{}", USER_AGENT, built_info::PKG_VERSION);
+
         let client = eventsource_client::ClientBuilder::for_url(&url)?
-            .header("user-agent", USER_AGENT)?
+            .header("user-agent", user_agent.as_str())?
             .header("x-api-key", &self.inner.api_key)?
             .method("POST".to_string())
             .body(body)
@@ -292,38 +297,28 @@ impl Client {
                                 }
                             };
 
-                            match resp.choices {
-                                Some(ref choices) => {
-                                    if choices.is_empty() {
-                                        // No data to stream or Done
-                                        continue;
-                                    }
-
-                                    // Finish Reason == Stop That is the final Response.
-                                    if choices[0].finish_reason == Some("stop".to_string()) {
-                                        return Ok(Some(resp));
-                                    }
-
-                                    let msg = choices[0]
-                                        .delta
-                                        .clone()
-                                        .unwrap_or(chat::EventsDelta {
-                                            content: Some("".to_string()),
-                                        })
-                                        .content;
-                                    event_handler(&msg.unwrap_or("".to_string()));
-                                }
-                                None => return Ok(None),
+                            if resp.choices.is_empty() {
+                                // No data to stream or Done
+                                continue;
                             }
+
+                            // Finish Reason == Stop That is the final Response.
+                            if resp.choices[0].finish_reason == Some("stop".to_string()) {
+                                return Ok(Some(resp));
+                            }
+
+                            let msg = resp.choices[0].delta.clone().content;
+                            event_handler(&msg);
                         }
                     }
                 }
+
                 Ok(None) => continue,
                 Err(e) => match e {
                     eventsource_client::Error::StreamClosed => break,
                     _ => return Err(stream_error_into_api_err(e).await),
                 },
-            };
+            }
         }
 
         Ok(None)

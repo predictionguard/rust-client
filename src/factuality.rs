@@ -23,16 +23,18 @@ impl Request {
     }
 }
 /// Response type for the factuality endpoint.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
 pub struct Response {
-    pub id: Option<String>,
-    pub object: Option<String>,
-    pub created: Option<i64>,
-    pub checks: Option<Vec<Check>>,
+    pub id: String,
+    pub object: String,
+    pub created: i64,
+    pub checks: Vec<Check>,
 }
 
 /// Represents an individual check in the factuality Response.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
 pub struct Check {
     pub score: f64,
     pub index: i64,

@@ -13,7 +13,7 @@ async fn main() {
 
     let clt = client::Client::new(pg_env).expect("client value");
 
-    let req = chat::Request::<chat::Message>::new(models::Model::NeuralChat7B)
+    let mut req = chat::Request::<chat::Message>::new(models::Model::NeuralChat7B)
         .add_message(
             chat::Roles::User,
             "How do you feel about the world in general".to_string(),
@@ -30,7 +30,7 @@ async fn main() {
     };
 
     let result = clt
-        .generate_chat_completion_events(req, &mut evt_handler)
+        .generate_chat_completion_events(&mut req, &mut evt_handler)
         .await
         .expect("error from chat_events");
 

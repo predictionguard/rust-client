@@ -6,15 +6,15 @@ use crate::models;
 /// Path to the embedding endpoint.
 pub(crate) const PATH: &str = "/embeddings";
 
-/// Input data type to contain either text or a base64 encoded image.
-#[derive(Serialize, Default, Deserialize, Debug)]
+/// Input data type to contain text and/or a base64 encoded image.
+#[derive(Serialize, Clone, Default, Deserialize, Debug)]
 pub struct Input {
     text: Option<String>,
     image: Option<String>,
 }
 
 /// Request data type used for the embedding endpoint.
-#[derive(Serialize, Default, Deserialize, Debug)]
+#[derive(Serialize, Clone, Default, Deserialize, Debug)]
 pub struct Request {
     pub(crate) input: Vec<Input>,
     #[serde(deserialize_with = "models::deserialize_models")]
@@ -22,83 +22,63 @@ pub struct Request {
 }
 
 impl Request {
-    /// Creates a new request for embedding. Either text or image is specified.
-    /// If both are specified only text will be added.
+    /// Creates a new request for embedding. Text and/or an image is specified.
     ///
     /// ## Arguments
     ///
     /// * `model` - The model to be used for the request.
     /// * `text` - The text used to generate the embedding.
-    /// * `image_base64` - A base64 encoded image used to generate the embedding.
-    pub fn new(
-        model: models::Model,
-        text: Option<String>,
-        image_base64: Option<String>,
-    ) -> Request {
-        let mut req = Self {
+    /// * `image` - A base64 encoded image used to generate the embedding.
+    pub async fn new(model: models::Model, text: Option<String>, image: Option<String>) -> Request {
+        Self {
             model,
-            ..Default::default()
-        };
-
-        if text.is_some() {
-            req.input.push(Input {
-                text,
-                ..Default::default()
-            });
-            return req;
+            input: vec![Input { text, image }],
         }
-
-        if image_base64.is_some() {
-            req.input.push(Input {
-                image: image_base64,
-                ..Default::default()
-            });
-        }
-        req
     }
 
-    /// Adds input data to the request. Either text or image is specified.
-    /// If both are specified only text will be added.
+    /// Adds input data to the request.
     ///
     /// ## Arguments
     ///
     /// * `text` - The text used to generate the embedding.
-    /// * `image_base64` - A base64 encoded image used to generate the embedding.
-    pub fn add_input(mut self, text: Option<String>, image_base64: Option<String>) -> Self {
-        if text.is_some() {
-            self.input.push(Input {
-                text,
-                ..Default::default()
-            });
-            return self;
-        }
+    /// * `image` - A base64 encoded image used to generate the embedding.
+    pub async fn add_input(mut self, text: Option<String>, image: Option<String>) -> Self {
+        self.input.push(Input { text, image });
 
-        if image_base64.is_some() {
-            self.input.push(Input {
-                image: image_base64,
-                ..Default::default()
-            });
+        self
+    }
+
+    /// Adds a list of inputs to the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `inputs` - A list of inputs to add.
+    pub fn add_inputs(mut self, inputs: Vec<Input>) -> Self {
+        for i in inputs {
+            self.input.push(i);
         }
         self
     }
 }
 
 /// Contains the embedded data information for the response.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Default, Deserialize, Debug)]
+#[serde(default)]
 pub struct Data {
-    pub status: Option<String>,
+    pub status: String,
     pub index: i64,
-    pub object: Option<String>,
-    pub embedding: Option<Vec<f64>>,
+    pub object: String,
+    pub embedding: Vec<f64>,
 }
 
 /// The response returned from the embedding endpoint.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Default, Deserialize, Debug)]
+#[serde(default)]
 pub struct Response {
-    pub id: Option<String>,
-    pub object: Option<String>,
+    pub id: String,
+    pub object: String,
     pub created: i64,
-    #[serde(deserialize_with = "models::deserialize_models_option")]
-    pub model: Option<models::Model>,
-    pub data: Option<Vec<Data>>,
+    #[serde(deserialize_with = "models::deserialize_models")]
+    pub model: models::Model,
+    pub data: Vec<Data>,
 }

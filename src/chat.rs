@@ -149,6 +149,18 @@ impl<T> Request<T> {
         self
     }
 
+    /// Returns a request with the list of messages.
+    ///
+    /// ## Arguments
+    ///
+    /// * `messages` - The messages to be added to the request.
+    pub fn with_messages(mut self, messages: Vec<T>) -> Request<T> {
+        for m in messages {
+            self.messages.push(m);
+        }
+        self
+    }
+
     /// Sets the max tokens for the request.
     ///
     /// ## Arguments
@@ -241,7 +253,8 @@ impl<T> Request<T> {
 }
 
 /// Represents a choice in the chat response.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[serde(default)]
 pub struct ResponseChoice {
     pub message: Message,
     pub index: i64,
@@ -249,7 +262,8 @@ pub struct ResponseChoice {
 }
 
 /// Represents a message in the chat response.
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[serde(default)]
 pub struct Message {
     pub role: Roles,
     pub content: String,
@@ -257,45 +271,49 @@ pub struct Message {
 }
 
 /// Reponse returned from the completion response for chat.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[serde(default)]
 pub struct Response {
-    pub id: Option<String>,
-    pub object: Option<String>,
-    pub created: Option<i64>,
-    #[serde(deserialize_with = "models::deserialize_models_option")]
-    pub model: Option<models::Model>,
-    pub choices: Option<Vec<ResponseChoice>>,
+    pub id: String,
+    pub object: String,
+    pub created: i64,
+    #[serde(deserialize_with = "models::deserialize_models")]
+    pub model: models::Model,
+    pub choices: Vec<ResponseChoice>,
 }
 
 /// Represents the content that is streamed in a chat events reponse.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[serde(default)]
 pub struct EventsDelta {
-    pub content: Option<String>,
+    pub content: String,
 }
 
 /// Represents the choices in a chat events response.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[serde(default)]
 pub struct ChoiceEvents {
     pub generated_text: Option<String>,
     pub index: i64,
     pub logprobs: f64,
     pub finish_reason: Option<String>,
-    pub delta: Option<EventsDelta>,
+    pub delta: EventsDelta,
 }
 
 /// Completion response returned from the chat events endpoint.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[serde(default)]
 pub struct ResponseEvents {
-    pub id: Option<String>,
-    pub object: Option<String>,
-    pub created: Option<i64>,
-    #[serde(deserialize_with = "models::deserialize_models_option")]
-    pub model: Option<models::Model>,
-    pub choices: Option<Vec<ChoiceEvents>>,
+    pub id: String,
+    pub object: String,
+    pub created: i64,
+    #[serde(deserialize_with = "models::deserialize_models")]
+    pub model: models::Model,
+    pub choices: Vec<ChoiceEvents>,
 }
 
 /// The different role types for chat requests/respones.
-#[derive(Debug, Deserialize, Serialize, PartialEq, Default)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Default, Clone)]
 pub enum Roles {
     #[serde(rename = "system")]
     System,

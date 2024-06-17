@@ -2,7 +2,7 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// The different models that can be used.
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, PartialEq, Default, Clone)]
 pub enum Model {
     Hermes2ProLlama38B,
     NousHermesLlama213B,
