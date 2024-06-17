@@ -89,6 +89,7 @@ impl Client {
     ///  * `pg_env` - the prediction guard environment to connect to.
     pub fn new(pg_env: PgEnvironment) -> Result<Self> {
         let user_agent = format!("{} v{}", USER_AGENT, built_info::PKG_VERSION);
+
         let http = ClientBuilder::new()
             .connect_timeout(Duration::new(15, 0))
             .read_timeout(Duration::new(30, 0))
@@ -262,8 +263,10 @@ impl Client {
 
         let body = serde_json::to_string(&req)?;
 
+        let user_agent = format!("{} v{}", USER_AGENT, built_info::PKG_VERSION);
+
         let client = eventsource_client::ClientBuilder::for_url(&url)?
-            .header("user-agent", USER_AGENT)?
+            .header("user-agent", user_agent.as_str())?
             .header("x-api-key", &self.inner.api_key)?
             .method("POST".to_string())
             .body(body)
@@ -300,7 +303,7 @@ impl Client {
                             }
 
                             // Finish Reason == Stop That is the final Response.
-                            if resp.choices[0].finish_reason == *"stop" {
+                            if resp.choices[0].finish_reason == Some("stop".to_string()) {
                                 return Ok(Some(resp));
                             }
 

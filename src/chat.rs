@@ -293,10 +293,10 @@ pub struct EventsDelta {
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 #[serde(default)]
 pub struct ChoiceEvents {
-    pub generated_text: String,
+    pub generated_text: Option<String>,
     pub index: i64,
     pub logprobs: f64,
-    pub finish_reason: String,
+    pub finish_reason: Option<String>,
     pub delta: EventsDelta,
 }
 

@@ -31,9 +31,7 @@
 //! See the `/examples` directory for more examples.
 //!
 //!
-// The file has been placed there by the build script.
-
-pub mod built_info;
+mod built_info;
 pub mod chat;
 pub mod client;
 pub mod completion;
@@ -179,9 +177,9 @@ mod tests {
             assert!(r.created > 0);
             assert_eq!(r.model, models::Model::NeuralChat7B);
 
-            assert!(!r.choices[0].generated_text.is_empty());
+            assert!(r.choices[0].generated_text.is_some());
             assert!(r.choices[0].index >= 0);
-            assert!(!r.choices[0].finish_reason.is_empty());
+            assert!(r.choices[0].finish_reason.is_some());
 
             assert!(r.choices[0].delta.content.is_empty());
         });
