@@ -6,7 +6,7 @@ use crate::models;
 /// Path to the embedding endpoint.
 pub(crate) const PATH: &str = "/embeddings";
 
-/// Input data type to contain either text or a base64 encoded image.
+/// Input data type to contain text and/or a base64 encoded image.
 #[derive(Serialize, Clone, Default, Deserialize, Debug)]
 pub struct Input {
     text: Option<String>,
@@ -22,8 +22,7 @@ pub struct Request {
 }
 
 impl Request {
-    /// Creates a new request for embedding. Either text or image is specified.
-    /// If both are specified only text will be added.
+    /// Creates a new request for embedding. Text and/or an image is specified.
     ///
     /// ## Arguments
     ///
@@ -31,13 +30,10 @@ impl Request {
     /// * `text` - The text used to generate the embedding.
     /// * `image` - A base64 encoded image used to generate the embedding.
     pub async fn new(model: models::Model, text: Option<String>, image: Option<String>) -> Request {
-        let mut req = Self {
+        Self {
             model,
-            ..Default::default()
-        };
-
-        req.input.push(Input { text, image });
-        req
+            input: vec![Input { text, image }],
+        }
     }
 
     /// Adds input data to the request.
@@ -72,7 +68,6 @@ pub struct Data {
     pub status: String,
     pub index: i64,
     pub object: String,
-    #[serde(default)]
     pub embedding: Vec<f64>,
 }
 
