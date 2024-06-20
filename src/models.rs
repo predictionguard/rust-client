@@ -1,6 +1,15 @@
 //! The models that are available to use.
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+const HERMES2_PRO_LLAMA_38B: &str = "Hermes-2-Pro-Llama-3-8B";
+const NOUS_HERMES_LLAMA2_13B: &str = "Nous-Hermes-Llama2-13B";
+const HERMES_2_PRO_MISTRAL_7B: &str = "Hermes-2-Pro-Mistral-7B";
+const NEURAL_CHAT_7B: &str = "Neural-Chat-7B";
+const LLAMA_3_SQLCODER_8B: &str = "llama-3-sqlcoder-8b";
+const DEEPSEEK_CODER_67B_INSTRUCT: &str = "deepseek-coder-6.7b-instruct";
+const BRIDGETOWER_LARGE_ITM_MLM_ITC: &str = "bridgetower-large-itm-mlm-itc";
+const LLAVA_15_7B_HF: &str = "llava-1.5-7b-hf";
+
 /// The different models that can be used.
 #[derive(Debug, PartialEq, Default, Clone)]
 pub enum Model {
@@ -9,7 +18,7 @@ pub enum Model {
     Hermes2ProMistral7B,
     #[default]
     NeuralChat7B,
-    Yi34BChat,
+    Llama3SqlCoder8b,
     DeepseekCoder67binstruct,
     BridgetowerLargeItmMlmItc,
     Llava157bhf,
@@ -22,18 +31,18 @@ impl Serialize for Model {
         S: Serializer,
     {
         match self {
-            Model::Hermes2ProLlama38B => serializer.serialize_str("Hermes-2-Pro-Llama-3-8B"),
-            Model::NousHermesLlama213B => serializer.serialize_str("Nous-Hermes-Llama2-13B"),
-            Model::Hermes2ProMistral7B => serializer.serialize_str("Hermes-2-Pro-Mistral-7B"),
-            Model::NeuralChat7B => serializer.serialize_str("Neural-Chat-7B"),
-            Model::Yi34BChat => serializer.serialize_str("Yi-34B-Chat"),
+            Model::Hermes2ProLlama38B => serializer.serialize_str(HERMES2_PRO_LLAMA_38B),
+            Model::NousHermesLlama213B => serializer.serialize_str(NOUS_HERMES_LLAMA2_13B),
+            Model::Hermes2ProMistral7B => serializer.serialize_str(HERMES_2_PRO_MISTRAL_7B),
+            Model::NeuralChat7B => serializer.serialize_str(NEURAL_CHAT_7B),
+            Model::Llama3SqlCoder8b => serializer.serialize_str(LLAMA_3_SQLCODER_8B),
             Model::DeepseekCoder67binstruct => {
-                serializer.serialize_str("deepseek-coder-6.7b-instruct")
+                serializer.serialize_str(DEEPSEEK_CODER_67B_INSTRUCT)
             }
             Model::BridgetowerLargeItmMlmItc => {
-                serializer.serialize_str("bridgetower-large-itm-mlm-itc")
+                serializer.serialize_str(BRIDGETOWER_LARGE_ITM_MLM_ITC)
             }
-            Model::Llava157bhf => serializer.serialize_str("llava-1.5-7b-hf"),
+            Model::Llava157bhf => serializer.serialize_str(LLAVA_15_7B_HF),
             Model::Other(s) => serializer.serialize_str(s.as_str()),
         }
     }
@@ -61,14 +70,14 @@ where
     let mut v = Vec::new();
     for mdl in mdls {
         v.push(match mdl {
-            "Hermes-2-Pro-Llama-3-8B" => Model::Hermes2ProLlama38B,
-            "Nous-Hermes-Llama2-13B" => Model::NousHermesLlama213B,
-            "Hermes-2-Pro-Mistral-7B" => Model::Hermes2ProMistral7B,
-            "Neural-Chat-7B" => Model::NeuralChat7B,
-            "Yi-34B-Chat" => Model::Yi34BChat,
-            "deepseek-coder-6.7b-instruct" => Model::DeepseekCoder67binstruct,
-            "bridgetower-large-itm-mlm-itc" => Model::BridgetowerLargeItmMlmItc,
-            "llava-1.5-7b-hf" => Model::Llava157bhf,
+            HERMES2_PRO_LLAMA_38B => Model::Hermes2ProLlama38B,
+            NOUS_HERMES_LLAMA2_13B => Model::NousHermesLlama213B,
+            HERMES_2_PRO_MISTRAL_7B => Model::Hermes2ProMistral7B,
+            NEURAL_CHAT_7B => Model::NeuralChat7B,
+            LLAMA_3_SQLCODER_8B => Model::Llama3SqlCoder8b,
+            DEEPSEEK_CODER_67B_INSTRUCT => Model::DeepseekCoder67binstruct,
+            BRIDGETOWER_LARGE_ITM_MLM_ITC => Model::BridgetowerLargeItmMlmItc,
+            LLAVA_15_7B_HF => Model::Llava157bhf,
             _ => Model::Other(mdl.to_string()),
         });
     }
@@ -85,14 +94,14 @@ where
     };
 
     match mdl {
-        "Hermes-2-Pro-Llama-3-8B" => Ok(Model::Hermes2ProLlama38B),
-        "Nous-Hermes-Llama2-13B" => Ok(Model::NousHermesLlama213B),
-        "Hermes-2-Pro-Mistral-7B" => Ok(Model::Hermes2ProMistral7B),
-        "Neural-Chat-7B" => Ok(Model::NeuralChat7B),
-        "Yi-34B-Chat" => Ok(Model::Yi34BChat),
-        "deepseek-coder-6.7b-instruct" => Ok(Model::DeepseekCoder67binstruct),
-        "bridgetower-large-itm-mlm-itc" => Ok(Model::BridgetowerLargeItmMlmItc),
-        "llava-1.5-7b-hf" => Ok(Model::Llava157bhf),
+        HERMES2_PRO_LLAMA_38B => Ok(Model::Hermes2ProLlama38B),
+        NOUS_HERMES_LLAMA2_13B => Ok(Model::NousHermesLlama213B),
+        HERMES_2_PRO_MISTRAL_7B => Ok(Model::Hermes2ProMistral7B),
+        NEURAL_CHAT_7B => Ok(Model::NeuralChat7B),
+        LLAMA_3_SQLCODER_8B => Ok(Model::Llama3SqlCoder8b),
+        DEEPSEEK_CODER_67B_INSTRUCT => Ok(Model::DeepseekCoder67binstruct),
+        BRIDGETOWER_LARGE_ITM_MLM_ITC => Ok(Model::BridgetowerLargeItmMlmItc),
+        LLAVA_15_7B_HF => Ok(Model::Llava157bhf),
         _ => Ok(Model::Other(mdl.to_string())),
     }
 }
