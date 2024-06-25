@@ -265,9 +265,11 @@ impl Client {
 
         let user_agent = format!("{} v{}", USER_AGENT, built_info::PKG_VERSION);
 
+        let key = format!("Bearer {}", &self.inner.api_key);
+
         let client = eventsource_client::ClientBuilder::for_url(&url)?
-            .header("user-agent", user_agent.as_str())?
-            .header("x-api-key", &self.inner.api_key)?
+            .header("User-Agent", user_agent.as_str())?
+            .header("Authorization", &key)?
             .method("POST".to_string())
             .body(body)
             .build();
