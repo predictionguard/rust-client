@@ -30,6 +30,7 @@ pub struct Request {
     pub(crate) max_tokens: Option<i64>,
     pub(crate) temperature: Option<f64>,
     pub(crate) top_p: Option<f64>,
+    pub(crate) top_k: Option<f64>,
     pub(crate) input: Option<RequestInput>,
     pub(crate) output: Option<RequestOutput>,
 }
@@ -76,6 +77,16 @@ impl Request {
     /// * `top` - The Top p setting for the request. Used to control randomness.
     pub fn top_p(mut self, top: f64) -> Request {
         self.top_p = Some(top);
+        self
+    }
+
+    /// Sets the Top k for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `top_k` - The Top k setting for the request. Used to control randomness.
+    pub fn top_k(mut self, top_k: f64) -> Request {
+        self.top_k = Some(top_k);
         self
     }
 

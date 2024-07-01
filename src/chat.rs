@@ -52,12 +52,14 @@ pub struct MessageVision {
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Request<T> {
     #[serde(deserialize_with = "models::deserialize_models")]
-    model: models::Model,
+    pub(crate) model: models::Model,
     messages: Vec<T>,
     max_tokens: i64,
     temperature: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     top_p: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    top_k: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     input: Option<RequestInput>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -133,6 +135,7 @@ impl<T> Request<T> {
             max_tokens: 100,
             temperature: 0.0,
             top_p: None,
+            top_k: None,
             input: None,
             output: None,
             stream: false,
@@ -188,6 +191,16 @@ impl<T> Request<T> {
     /// * `top` - The Top p setting for the request. Used to control randomness.
     pub fn top_p(mut self, top: f64) -> Request<T> {
         self.top_p = Some(top);
+        self
+    }
+
+    /// Sets the Top k for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `top_k` - The Top k setting for the request. Used to control randomness.
+    pub fn top_k(mut self, top_k: f64) -> Request<T> {
+        self.top_k = Some(top_k);
         self
     }
 
