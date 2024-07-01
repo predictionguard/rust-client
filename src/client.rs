@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{chat, completion, embedding, factuality, injection, pii, Result, toxicity, translate};
 use crate::built_info;
+use crate::models::{CHAT_MODELS, EMBEDDING_MODELS, model_valid_for_call, VISION_MODELS};
 
 const USER_AGENT: &str = "Prediction Guard Rust Client";
 
@@ -150,6 +151,10 @@ impl Client {
     /// Returns a [`embedding::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
     pub async fn embedding(&self, req: &embedding::Request) -> Result<Option<embedding::Response>> {
+        if !model_valid_for_call(&EMBEDDING_MODELS, &req.model) {
+            return Err(Box::from("invalid model specified for call"));
+        }
+
         let url = format!("{}{}", &self.inner.server, embedding::PATH);
 
         let result = self
@@ -182,6 +187,10 @@ impl Client {
         &self,
         req: &completion::Request,
     ) -> Result<Option<completion::Response>> {
+        if !model_valid_for_call(&CHAT_MODELS, &req.model) {
+            return Err(Box::from("invalid model specified for call"));
+        }
+
         let url = format!("{}{}", &self.inner.server, completion::PATH);
 
         let result = self
@@ -214,6 +223,10 @@ impl Client {
         &self,
         req: &chat::Request<chat::Message>,
     ) -> Result<Option<chat::Response>> {
+        if !model_valid_for_call(&CHAT_MODELS, &req.model) {
+            return Err(Box::from("invalid model specified for call"));
+        }
+
         let url = format!("{}{}", &self.inner.server, chat::PATH);
 
         let result = self
@@ -257,6 +270,10 @@ impl Client {
     where
         F: FnMut(&String),
     {
+        if !model_valid_for_call(&CHAT_MODELS, &req.model) {
+            return Err(Box::from("invalid model specified for call"));
+        }
+
         let url = format!("{}{}", &self.inner.server, chat::PATH);
 
         req.stream = true;
@@ -338,6 +355,10 @@ impl Client {
         &self,
         req: &chat::Request<chat::MessageVision>,
     ) -> Result<Option<chat::Response>> {
+        if !model_valid_for_call(&VISION_MODELS, &req.model) {
+            return Err(Box::from("invalid model specified for call"));
+        }
+
         let url = format!("{}{}", &self.inner.server, chat::PATH);
 
         let result = self

@@ -84,6 +84,27 @@ mod tests {
     }
 
     #[test]
+    fn completion_invalid_model() {
+        let pg_env = client::PgEnvironment {
+            key: "api-key".to_string(),
+            host: String::new(),
+        };
+
+        let clt = client::Client::new(pg_env).expect("client value");
+
+        let req = completion::Request::new(
+            models::Model::Llava157bhf,
+            "Will I lose my hair?".to_string(),
+        );
+
+        tokio_test::block_on(async {
+            let result = clt.generate_completion(&req).await;
+
+            assert!(result.is_err());
+        });
+    }
+
+    #[test]
     fn completion() {
         let server = MockServer::start();
         let url = format!("http://{}", server.address());
@@ -183,6 +204,27 @@ mod tests {
     }
 
     #[test]
+    fn chat_completion_invalid_model() {
+        let pg_env = client::PgEnvironment {
+            key: "api-key".to_string(),
+            host: String::new(),
+        };
+
+        let clt = client::Client::new(pg_env).expect("client value");
+
+        let req = chat::Request::<chat::Message>::new(models::Model::NeuralChat7B)
+            .max_tokens(1000)
+            .temperature(1.1)
+            .add_message(chat::Roles::User, "Will I lose my hair?".to_string());
+
+        tokio_test::block_on(async {
+            let result = clt.generate_chat_completion(&req).await;
+
+            assert!(result.is_err());
+        });
+    }
+
+    #[test]
     fn chat_completion() {
         let server = MockServer::start();
         let url = format!("http://{}", server.address());
@@ -229,6 +271,31 @@ mod tests {
             assert!(r.choices[0].index >= 0);
             assert_eq!(r.choices[0].message.role, chat::Roles::Assistant);
             assert!(!r.choices[0].message.content.is_empty());
+        });
+    }
+
+    #[test]
+    fn chat_vision_invalid_model() {
+        let pg_env = client::PgEnvironment {
+            key: "api-key".to_string(),
+            host: String::new(),
+        };
+
+        let clt = client::Client::new(pg_env).expect("client value");
+
+        let req = chat::Request::<MessageVision>::new(models::Model::NeuralChat7B)
+            .max_tokens(1000)
+            .temperature(0.2)
+            .add_message(
+                chat::Roles::User,
+                "What is in this image?".to_string(),
+                BASE64_IMG.to_string(),
+            );
+
+        tokio_test::block_on(async {
+            let result = clt.generate_chat_vision(&req).await;
+
+            assert!(result.is_err());
         });
     }
 
@@ -527,6 +594,29 @@ mod tests {
             assert!(!r.translations[0].translation.is_empty());
             assert!(!r.translations[0].model.is_empty());
             assert!(!r.translations[0].status.is_empty());
+        });
+    }
+
+    #[test]
+    fn embedding_invalid_model() {
+        let pg_env = client::PgEnvironment {
+            key: "api-key".to_string(),
+            host: String::new(),
+        };
+
+        let clt = client::Client::new(pg_env).expect("client value");
+
+        tokio_test::block_on(async {
+            let req = embedding::Request::new(
+                models::Model::Hermes2ProMistral7B,
+                Some("Skyline with Airplane".to_string()),
+                None,
+            )
+            .await;
+
+            let result = clt.embedding(&req).await;
+
+            assert!(result.is_err());
         });
     }
 

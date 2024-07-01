@@ -1,6 +1,23 @@
 //! The models that are available to use.
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+pub(crate) const CHAT_MODELS: [Model; 6] = [
+    Model::Hermes2ProLlama38B,
+    Model::NousHermesLlama213B,
+    Model::Hermes2ProMistral7B,
+    Model::NeuralChat7B,
+    Model::Llama3SqlCoder8b,
+    Model::DeepseekCoder67binstruct,
+];
+
+pub(crate) const EMBEDDING_MODELS: [Model; 1] = [Model::BridgetowerLargeItmMlmItc];
+
+pub(crate) const VISION_MODELS: [Model; 1] = [Model::Llava157bhf];
+
+pub(crate) fn model_valid_for_call(available: &[Model], model: &Model) -> bool {
+    available.iter().any(|m| m == model)
+}
+
 const HERMES2_PRO_LLAMA_38B: &str = "Hermes-2-Pro-Llama-3-8B";
 const NOUS_HERMES_LLAMA2_13B: &str = "Nous-Hermes-Llama2-13B";
 const HERMES_2_PRO_MISTRAL_7B: &str = "Hermes-2-Pro-Mistral-7B";
@@ -103,5 +120,19 @@ where
         BRIDGETOWER_LARGE_ITM_MLM_ITC => Ok(Model::BridgetowerLargeItmMlmItc),
         LLAVA_15_7B_HF => Ok(Model::Llava157bhf),
         _ => Ok(Model::Other(mdl.to_string())),
+    }
+}
+
+mod tests {
+
+    #[test]
+    fn validate_model() {
+        let m = crate::models::Model::Llama3SqlCoder8b;
+
+        let b = crate::models::model_valid_for_call(&crate::models::CHAT_MODELS, &m);
+        assert!(b);
+
+        let e = crate::models::model_valid_for_call(&crate::models::EMBEDDING_MODELS, &m);
+        assert!(!e);
     }
 }
