@@ -14,6 +14,7 @@ async fn main() {
         "The rain in Spain stays mainly in the plain".to_string(),
         translate::Language::English,
         translate::Language::Spanish,
+        true,
     );
 
     let result = clt.translate(&req).await.expect("error from translate");

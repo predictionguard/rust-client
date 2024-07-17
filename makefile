@@ -161,7 +161,8 @@ curl-translate:
      -d '{ \
 		"text": "The rain in Spain stays mainly in the plain", \
 		"source_lang": "eng", \
-		"target_lang": "spa" \
+		"target_lang": "spa", \
+		"use_third_party_engine": true \
 	}'
 
 run-translate:

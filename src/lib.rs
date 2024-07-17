@@ -567,6 +567,7 @@ mod tests {
             "The rain in Spain stays mainly in the plain".to_string(),
             translate::Language::English,
             translate::Language::Spanish,
+            true,
         );
 
         tokio_test::block_on(async {
