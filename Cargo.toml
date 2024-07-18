@@ -1,6 +1,6 @@
 [package]
 name = "prediction-guard"
-version = "0.8.0"
+version = "0.8.1"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Ed Gonzalez <ed.gonzalez@predictionguard.com>"]
@@ -23,7 +23,7 @@ serde_json = { version = "1.0", features = ["std"] }
 futures = "0.3"
 dotenvy = "0.15"
 base64 = "0.22.1"
-async-trait = "0.1.80"
+async-trait = "0.1"
 
 
 [dev-dependencies]

@@ -12,6 +12,7 @@ pub struct Request {
     pub(crate) source_lang: Language,
     #[serde(deserialize_with = "deserialize_language")]
     pub(crate) target_lang: Language,
+    pub(crate) use_third_party_engine: bool,
 }
 
 impl Request {
@@ -22,11 +23,18 @@ impl Request {
     /// * `text` - The text to be translated.
     /// * `source_lang` - The language of the text to be translated.
     /// * `target_lang` - The language to translate the text to.
-    pub fn new(text: String, source_lang: Language, target_lang: Language) -> Request {
+    /// * `use_third_party_engine` - Whether to use third-party translation engines such as OpenAI, DeepL, and Google.
+    pub fn new(
+        text: String,
+        source_lang: Language,
+        target_lang: Language,
+        use_third_party_engine: bool,
+    ) -> Request {
         Self {
             text,
             source_lang,
             target_lang,
+            use_third_party_engine,
         }
     }
 }
