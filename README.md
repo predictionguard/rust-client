@@ -16,10 +16,9 @@ You will need this access token to continue.
 ### Usage
 
 ```rust
-use std::env;
+extern crate prediction_guard as pg_client;
 
-use pg_rust_client as pg_client;
-use pg_client::{client, chat, models};
+use pg_client::{chat, client, models};
 
 #[tokio::main]
 async fn main() {
@@ -33,7 +32,7 @@ async fn main() {
             "How do you feel about the world in general?".to_string(),
         )
         .max_tokens(1000)
-        .temperature(0.8);
+        .temperature(0.85);
 
     let result = clt
         .generate_chat_completion(&req)

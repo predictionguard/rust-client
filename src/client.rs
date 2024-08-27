@@ -55,14 +55,14 @@ impl PgEnvironment {
 
     /// Loads Prediction Guard API configuration from either
     /// a `.env` file or environment variables. Expects to find
-    /// the `PGKEY` and `PGHOST` environment variables.
+    /// the `PREDICTIONGUARD_API_KEY` and `PREDICTIONGUARD_URL` environment variables.
     ///
     /// Returns an error if the environment variables are not found.
     pub fn from_env() -> Result<Self> {
         let _ = dotenvy::dotenv(); // Ignoring error - it's ok to not have .env files
         Ok(Self {
-            key: env::var("PGKEY")?,
-            host: env::var("PGHOST")?,
+            key: env::var("PREDICTIONGUARD_API_KEY")?,
+            host: env::var("PREDICTIONGUARD_URL")?,
         })
     }
 }
