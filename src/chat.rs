@@ -271,7 +271,6 @@ impl<T> Request<T> {
 pub struct ResponseChoice {
     pub message: Message,
     pub index: i64,
-    pub status: String,
 }
 
 /// Represents a message in the chat response.
@@ -280,7 +279,6 @@ pub struct ResponseChoice {
 pub struct Message {
     pub role: Roles,
     pub content: String,
-    pub output: Option<String>,
 }
 
 /// Reponse returned from the completion response for chat.
@@ -323,6 +321,7 @@ pub struct ResponseEvents {
     #[serde(deserialize_with = "models::deserialize_models")]
     pub model: models::Model,
     pub choices: Vec<ChoiceEvents>,
+    pub error: Option<String>,
 }
 
 /// The different role types for chat requests/respones.

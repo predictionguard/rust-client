@@ -65,7 +65,6 @@ impl Request {
 #[derive(Serialize, Default, Deserialize, Debug)]
 #[serde(default)]
 pub struct Data {
-    pub status: String,
     pub index: i64,
     pub object: String,
     pub embedding: Vec<f64>,

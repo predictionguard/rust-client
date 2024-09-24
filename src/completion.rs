@@ -157,9 +157,6 @@ impl Request {
 pub struct Choice {
     pub text: String,
     pub index: i64,
-    pub status: String,
-    #[serde(deserialize_with = "models::deserialize_models")]
-    pub model: models::Model,
 }
 
 /// Completion response for the base completetion endpoint.

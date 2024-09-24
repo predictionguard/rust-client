@@ -38,5 +38,4 @@ pub struct Response {
 pub struct Check {
     pub score: f64,
     pub index: i64,
-    pub status: String,
 }
