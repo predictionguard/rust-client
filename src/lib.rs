@@ -146,9 +146,7 @@ mod tests {
             assert!(r.created > 0);
 
             assert!(!r.choices[0].text.is_empty());
-            assert!(!r.choices[0].status.is_empty());
             assert!(r.choices[0].index >= 0);
-            assert_eq!(r.choices[0].model, models::Model::NeuralChat7B);
         });
     }
 
@@ -348,7 +346,6 @@ mod tests {
             assert!(!r.choices.is_empty());
 
             assert!(r.choices[0].index >= 0);
-            assert_eq!(r.choices[0].status, "success");
             assert_eq!(r.choices[0].message.role, chat::Roles::Assistant);
             assert!(!r.choices[0].message.content.is_empty());
         });
@@ -400,7 +397,6 @@ mod tests {
             assert!(!checks.is_empty());
             assert!(checks[0].score > 0.0);
             assert!(checks[0].index >= 0);
-            assert!(!checks[0].status.is_empty());
         });
     }
 
@@ -446,7 +442,6 @@ mod tests {
             assert!(!r.checks.is_empty());
             assert!(r.checks[0].probability > 0.0);
             assert!(r.checks[0].index >= 0);
-            assert!(!r.checks[0].status.is_empty());
         });
     }
 
@@ -494,7 +489,6 @@ mod tests {
 
             assert!(!r.checks[0].new_prompt.is_empty());
             assert!(r.checks[0].index >= 0);
-            assert!(!r.checks[0].status.is_empty());
         });
     }
 
@@ -540,7 +534,6 @@ mod tests {
 
             assert!(r.checks[0].score >= 0.0);
             assert!(r.checks[0].index >= 0);
-            assert!(!r.checks[0].status.is_empty());
         });
     }
 
@@ -662,7 +655,6 @@ mod tests {
             assert_eq!(r.model, models::Model::BridgetowerLargeItmMlmItc);
             assert!(r.created > 0);
 
-            assert!(!&r.data[0].status.is_empty());
             assert!(!&r.data[0].object.is_empty());
             assert!(r.data[0].index >= 0);
             assert!(!&r.data[0].embedding.is_empty());

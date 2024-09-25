@@ -59,7 +59,7 @@ pub struct Request<T> {
     #[serde(skip_serializing_if = "Option::is_none")]
     top_p: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    top_k: Option<f64>,
+    top_k: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     input: Option<RequestInput>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -114,7 +114,6 @@ impl Request<Message> {
         let m = Message {
             role,
             content: prompt,
-            ..Default::default()
         };
 
         self.messages.push(m);
@@ -199,7 +198,7 @@ impl<T> Request<T> {
     /// ## Arguments
     ///
     /// * `top_k` - The Top k setting for the request. Used to control randomness.
-    pub fn top_k(mut self, top_k: f64) -> Request<T> {
+    pub fn top_k(mut self, top_k: i64) -> Request<T> {
         self.top_k = Some(top_k);
         self
     }
@@ -208,8 +207,7 @@ impl<T> Request<T> {
     ///
     /// ## Arguments
     ///
-    /// * `block_prompt_injection` - Determines whether to check for prompt injection in
-    /// the request.
+    /// * `block_prompt_injection` - Determines whether to check for prompt injection in the request.
     /// * `pii` - Sets the `pii::InputMethod` and the `pii::ReplacementMethod`.
     pub fn input(
         mut self,
@@ -271,7 +269,6 @@ impl<T> Request<T> {
 pub struct ResponseChoice {
     pub message: Message,
     pub index: i64,
-    pub status: String,
 }
 
 /// Represents a message in the chat response.
@@ -280,7 +277,6 @@ pub struct ResponseChoice {
 pub struct Message {
     pub role: Roles,
     pub content: String,
-    pub output: Option<String>,
 }
 
 /// Reponse returned from the completion response for chat.
@@ -323,6 +319,7 @@ pub struct ResponseEvents {
     #[serde(deserialize_with = "models::deserialize_models")]
     pub model: models::Model,
     pub choices: Vec<ChoiceEvents>,
+    pub error: Option<String>,
 }
 
 /// The different role types for chat requests/respones.

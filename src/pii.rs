@@ -59,7 +59,6 @@ impl Request {
 pub struct Check {
     pub new_prompt: String,
     pub index: i64,
-    pub status: String,
 }
 
 /// Response type for the PII detection endpoint.

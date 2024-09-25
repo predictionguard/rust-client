@@ -27,7 +27,6 @@ impl Request {
 pub struct Check {
     pub score: f64,
     pub index: i64,
-    pub status: String,
 }
 
 /// Response type for the toxicity endpoint.
