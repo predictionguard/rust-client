@@ -6,14 +6,14 @@ use eventsource_client::Client as EventClient;
 use eventsource_client::SSE;
 use futures::TryStreamExt;
 use reqwest::{
-    ClientBuilder,
-    header::{HeaderMap, HeaderValue}, Response, StatusCode,
+    header::{HeaderMap, HeaderValue},
+    ClientBuilder, Response, StatusCode,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{chat, completion, embedding, factuality, injection, pii, Result, toxicity, translate};
 use crate::built_info;
-use crate::models::{CHAT_MODELS, EMBEDDING_MODELS, model_valid_for_call, VISION_MODELS};
+use crate::models::{model_valid_for_call, CHAT_MODELS, EMBEDDING_MODELS, VISION_MODELS};
+use crate::{chat, completion, embedding, factuality, injection, pii, toxicity, translate, Result};
 
 const USER_AGENT: &str = "Prediction Guard Rust Client";
 

@@ -13,7 +13,11 @@ async fn main() {
     let req = completion::Request::new(
         models::Model::NeuralChat7B,
         "Will I lose my hair?".to_string(),
-    );
+    )
+    .max_tokens(300)
+    .temperature(0.1)
+    .top_p(0.1)
+    .top_k(50);
 
     let result = clt
         .generate_completion(&req)

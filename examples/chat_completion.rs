@@ -15,8 +15,10 @@ async fn main() {
             chat::Roles::User,
             "How do you feel about the world in general?".to_string(),
         )
-        .max_tokens(1000)
-        .temperature(0.85);
+        .max_tokens(300)
+        .temperature(0.1)
+        .top_p(0.1)
+        .top_k(50);
 
     let result = clt
         .generate_chat_completion(&req)

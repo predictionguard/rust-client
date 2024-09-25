@@ -12,8 +12,10 @@ async fn main() {
     let clt = client::Client::new(pg_env).expect("client value");
 
     let req = chat::Request::<MessageVision>::new(models::Model::Llava157bhf)
-        .temperature(0.85)
-        .max_tokens(1000)
+        .temperature(0.10)
+        .top_p(0.1)
+        .top_k(50)
+        .max_tokens(300)
         .add_message(
             chat::Roles::User,
             "What is in this image?".to_string(),
