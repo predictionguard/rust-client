@@ -20,7 +20,7 @@ pub struct RequestInput {
 
 /// Allows for checking the output of the request for factuality and toxicity.
 #[derive(Debug, Deserialize, Serialize, Default)]
-struct RequestOutput {
+pub(crate) struct RequestOutput {
     factuality: bool,
     toxicity: bool,
 }
@@ -63,7 +63,7 @@ pub struct Request<T> {
     #[serde(skip_serializing_if = "Option::is_none")]
     input: Option<RequestInput>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    output: Option<RequestOutput>,
+    pub(crate) output: Option<RequestOutput>,
     pub(crate) stream: bool,
 }
 

@@ -2,7 +2,7 @@
 //! type [`embedding::Response`].
 extern crate prediction_guard as pg_client;
 
-use pg_client::{client, embedding, image, models};
+use pg_client::{client, embedding, image};
 
 #[tokio::main]
 async fn main() {
@@ -19,9 +19,14 @@ async fn main() {
 
     let clt = client::Client::new(pg_env).expect("client value");
 
+    // Load the list of models available for completion.
+    let models = clt.retrieve_embedding_models().await.expect("model list");
+
+    assert!(!models.is_empty());
+
     // Embedding request can contain text and/or an image. The image should be base64 encoded.
     let req = embedding::Request::new(
-        models::Model::BridgetowerLargeItmMlmItc,
+        models[0].to_string(),
         Some("skyline with a flying horse".to_string()),
         img_str,
     )

@@ -12,7 +12,7 @@ use reqwest::{
 use serde::{Deserialize, Serialize};
 
 use crate::built_info;
-use crate::models::{model_valid_for_call, CHAT_MODELS, EMBEDDING_MODELS, VISION_MODELS};
+use crate::models::{model_valid_for_call, CHAT_MODELS, VISION_MODELS};
 use crate::{chat, completion, embedding, factuality, injection, pii, toxicity, translate, Result};
 
 const USER_AGENT: &str = "Prediction Guard Rust Client";
@@ -20,17 +20,12 @@ const USER_AGENT: &str = "Prediction Guard Rust Client";
 /// The base error that is returned from the API calls.
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ApiError {
-    #[serde(default)]
-    http_status: u16,
     error: String,
 }
 
 impl fmt::Display for ApiError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_fmt(format_args!(
-            "http_status {}, error {}",
-            self.http_status, self.error
-        ))
+        f.write_fmt(format_args!("error {}", self.error))
     }
 }
 
@@ -151,10 +146,6 @@ impl Client {
     /// Returns a [`embedding::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
     pub async fn embedding(&self, req: &embedding::Request) -> Result<Option<embedding::Response>> {
-        if !model_valid_for_call(&EMBEDDING_MODELS, &req.model) {
-            return Err(Box::from("invalid model specified for call"));
-        }
-
         let url = format!("{}{}", &self.inner.server, embedding::PATH);
 
         let result = self
@@ -175,6 +166,30 @@ impl Client {
         Ok(Some(embed_response))
     }
 
+    /// Retrieves the list of models available for the embeddings endpoint.
+    ///
+    /// Returns a vector of strings with the model names. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
+    pub async fn retrieve_embedding_models(&self) -> Result<Vec<String>> {
+        let url = format!("{}{}", &self.inner.server, embedding::PATH);
+
+        let result = self
+            .inner
+            .http_client
+            .get(url)
+            .headers(self.inner.headers.clone())
+            .send()
+            .await?;
+
+        if result.status() != StatusCode::OK {
+            return Err(retrieve_error(result).await);
+        }
+
+        let embed_response = result.json::<Vec<String>>().await?;
+
+        Ok(embed_response)
+    }
+
     /// Calls the generate completion endpoint.
     ///
     /// ## Arguments:
@@ -187,10 +202,6 @@ impl Client {
         &self,
         req: &completion::Request,
     ) -> Result<Option<completion::Response>> {
-        if !model_valid_for_call(&CHAT_MODELS, &req.model) {
-            return Err(Box::from("invalid model specified for call"));
-        }
-
         let url = format!("{}{}", &self.inner.server, completion::PATH);
 
         let result = self
@@ -209,6 +220,30 @@ impl Client {
         let comp_response = result.json::<completion::Response>().await?;
 
         Ok(Some(comp_response))
+    }
+
+    /// Retrieves the list of models available for the completion endpoint.
+    ///
+    /// Returns a vector of strings with the model names. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
+    pub async fn retrieve_completion_models(&self) -> Result<Vec<String>> {
+        let url = format!("{}{}", &self.inner.server, completion::PATH);
+
+        let result = self
+            .inner
+            .http_client
+            .get(url)
+            .headers(self.inner.headers.clone())
+            .send()
+            .await?;
+
+        if result.status() != StatusCode::OK {
+            return Err(retrieve_error(result).await);
+        }
+
+        let comp_response = result.json::<Vec<String>>().await?;
+
+        Ok(comp_response)
     }
 
     /// Calls the generate chat completion endpoint.
@@ -277,6 +312,7 @@ impl Client {
         let url = format!("{}{}", &self.inner.server, chat::PATH);
 
         req.stream = true;
+        req.output = None;
 
         let body = serde_json::to_string(&req)?;
 
@@ -310,7 +346,6 @@ impl Client {
                                 Ok(v) => v,
                                 Err(e) => {
                                     return Err(Box::from(ApiError {
-                                        http_status: 500,
                                         error: format!("error parsing stream response: {}", e),
                                     }));
                                 }
@@ -529,21 +564,17 @@ impl Client {
 }
 
 async fn retrieve_error(resp: Response) -> Box<dyn std::error::Error> {
-    let code = resp.status().as_u16();
-
-    let mut err = match resp.json::<ApiError>().await {
+    let err = match resp.json::<ApiError>().await {
         Ok(x) => x,
         Err(e) => return Box::from(format!("error parsing error response, {}", e)),
     };
 
-    err.http_status = code;
     err.into()
 }
 
 async fn stream_error_into_api_err(err: eventsource_client::Error) -> Box<dyn std::error::Error> {
     let msg = format!("{}", err);
     Box::from(ApiError {
-        http_status: 500,
         error: msg.to_string(),
     })
 }

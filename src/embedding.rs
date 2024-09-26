@@ -1,8 +1,6 @@
 //! Data types to be used in the embedding endpoint.
 use serde::{Deserialize, Serialize};
 
-use crate::models;
-
 /// Path to the embedding endpoint.
 pub(crate) const PATH: &str = "/embeddings";
 
@@ -17,8 +15,7 @@ pub struct Input {
 #[derive(Serialize, Clone, Default, Deserialize, Debug)]
 pub struct Request {
     pub(crate) input: Vec<Input>,
-    #[serde(deserialize_with = "models::deserialize_models")]
-    pub(crate) model: models::Model,
+    pub(crate) model: String,
 }
 
 impl Request {
@@ -29,7 +26,7 @@ impl Request {
     /// * `model` - The model to be used for the request.
     /// * `text` - The text used to generate the embedding.
     /// * `image` - A base64 encoded image used to generate the embedding.
-    pub async fn new(model: models::Model, text: Option<String>, image: Option<String>) -> Request {
+    pub async fn new(model: String, text: Option<String>, image: Option<String>) -> Request {
         Self {
             model,
             input: vec![Input { text, image }],
@@ -77,7 +74,6 @@ pub struct Response {
     pub id: String,
     pub object: String,
     pub created: i64,
-    #[serde(deserialize_with = "models::deserialize_models")]
-    pub model: models::Model,
+    pub model: String,
     pub data: Vec<Data>,
 }

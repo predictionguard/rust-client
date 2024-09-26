@@ -2,7 +2,7 @@
 //! type [`completion::Response`].
 extern crate prediction_guard as pg_client;
 
-use pg_client::{client, completion, models};
+use pg_client::{client, completion};
 
 #[tokio::main]
 async fn main() {
@@ -10,14 +10,16 @@ async fn main() {
 
     let clt = client::Client::new(pg_env).expect("client value");
 
-    let req = completion::Request::new(
-        models::Model::NeuralChat7B,
-        "Will I lose my hair?".to_string(),
-    )
-    .max_tokens(300)
-    .temperature(0.1)
-    .top_p(0.1)
-    .top_k(50);
+    // Load the list of models available for completion.
+    let models = clt.retrieve_completion_models().await.expect("model list");
+
+    assert!(!models.is_empty());
+
+    let req = completion::Request::new(models[0].clone(), "Will I lose my hair?".to_string())
+        .max_tokens(300)
+        .temperature(0.1)
+        .top_p(0.1)
+        .top_k(50);
 
     let result = clt
         .generate_completion(&req)

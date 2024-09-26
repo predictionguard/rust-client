@@ -1,7 +1,7 @@
 //! Data types that are used for the completion endpoints.
 use serde::{self, Deserialize, Serialize};
 
-use crate::{models, pii};
+use crate::pii;
 
 /// Path to the completions endpoint.
 pub const PATH: &str = "/completions";
@@ -24,8 +24,7 @@ pub struct RequestOutput {
 /// Completion request for the base completion endpoint.
 #[derive(Debug, Deserialize, Default, Serialize)]
 pub struct Request {
-    #[serde(deserialize_with = "models::deserialize_models")]
-    pub(crate) model: models::Model,
+    pub(crate) model: String,
     pub(crate) prompt: String,
     pub(crate) max_tokens: Option<i64>,
     pub(crate) temperature: Option<f64>,
@@ -42,7 +41,7 @@ impl Request {
     ///
     /// * `model` - The model to be used for the request.
     /// * `prompt` - The prompt to be used for the completion request.
-    pub fn new(model: models::Model, prompt: String) -> Self {
+    pub fn new(model: String, prompt: String) -> Self {
         Self {
             model,
             prompt,
