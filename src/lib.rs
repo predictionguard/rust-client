@@ -36,7 +36,6 @@ pub mod embedding;
 pub mod factuality;
 pub mod image;
 pub mod injection;
-pub mod models;
 pub mod pii;
 pub mod toxicity;
 pub mod translate;
@@ -85,15 +84,12 @@ mod tests {
 
     #[test]
     fn completion_invalid_model() {
-        let pg_env = client::PgEnvironment {
-            key: "api-key".to_string(),
-            host: String::new(),
-        };
+        let pg_env = client::PgEnvironment::from_env().expect("environment variables");
 
         let clt = client::Client::new(pg_env).expect("client value");
 
         let req = completion::Request::new(
-            models::Model::Llava157bhf,
+            "invalid model".to_string(),
             "Will I lose my hair?".to_string(),
         );
 
@@ -124,7 +120,7 @@ mod tests {
         let clt = client::Client::new(pg_env).expect("client value");
 
         let req = completion::Request::new(
-            models::Model::NeuralChat7B,
+            "Hermes-2-Pro-Llama-3-8B".to_string(),
             "Will I lose my hair?".to_string(),
         );
 
@@ -159,7 +155,7 @@ mod tests {
 
         let clt = client::Client::new(pg_env).expect("client value");
 
-        let mut req = chat::Request::<chat::Message>::new(models::Model::NeuralChat7B)
+        let mut req = chat::Request::<chat::Message>::new("Hermes-2-Pro-Llama-3-8B".to_string())
             .add_message(
                 chat::Roles::User,
                 "How do you feel about the world in general".to_string(),
@@ -191,7 +187,7 @@ mod tests {
             assert!(!r.id.is_empty());
             assert!(!r.object.is_empty());
             assert!(r.created > 0);
-            assert_eq!(r.model, models::Model::NeuralChat7B);
+            assert_eq!(r.model, "Hermes-2-Pro-Llama-3-8B".to_string());
 
             assert!(r.choices[0].generated_text.is_some());
             assert!(r.choices[0].index >= 0);
@@ -203,14 +199,11 @@ mod tests {
 
     #[test]
     fn chat_completion_invalid_model() {
-        let pg_env = client::PgEnvironment {
-            key: "api-key".to_string(),
-            host: String::new(),
-        };
+        let pg_env = client::PgEnvironment::from_env().expect("environment variables");
 
         let clt = client::Client::new(pg_env).expect("client value");
 
-        let req = chat::Request::<chat::Message>::new(models::Model::NeuralChat7B)
+        let req = chat::Request::<chat::Message>::new("invalid model".to_string())
             .max_tokens(1000)
             .temperature(1.1)
             .add_message(chat::Roles::User, "Will I lose my hair?".to_string());
@@ -241,7 +234,7 @@ mod tests {
 
         let clt = client::Client::new(pg_env).expect("client value");
 
-        let req = chat::Request::<chat::Message>::new(models::Model::NeuralChat7B)
+        let req = chat::Request::<chat::Message>::new("Hermes-2-Pro-Llama-3-8B".to_string())
             .max_tokens(1000)
             .temperature(1.1)
             .add_message(chat::Roles::User, "Will I lose my hair?".to_string());
@@ -262,7 +255,7 @@ mod tests {
             assert!(!r.id.is_empty());
             assert!(!r.object.is_empty());
             assert!(r.created > 0);
-            assert_eq!(r.model, models::Model::NeuralChat7B);
+            assert_eq!(r.model, "Hermes-2-Pro-Llama-3-8B".to_string());
 
             assert!(!r.choices.is_empty());
 
@@ -274,14 +267,11 @@ mod tests {
 
     #[test]
     fn chat_vision_invalid_model() {
-        let pg_env = client::PgEnvironment {
-            key: "api-key".to_string(),
-            host: String::new(),
-        };
+        let pg_env = client::PgEnvironment::from_env().expect("environment variables");
 
         let clt = client::Client::new(pg_env).expect("client value");
 
-        let req = chat::Request::<MessageVision>::new(models::Model::NeuralChat7B)
+        let req = chat::Request::<MessageVision>::new("invalid model".to_string())
             .max_tokens(1000)
             .temperature(0.2)
             .add_message(
@@ -316,7 +306,7 @@ mod tests {
 
         let clt = client::Client::new(pg_env).expect("client value");
 
-        let req = chat::Request::<MessageVision>::new(models::Model::Llava157bhf)
+        let req = chat::Request::<MessageVision>::new("llava-1.5-7b-hf".to_string())
             .max_tokens(1000)
             .temperature(0.2)
             .add_message(
@@ -341,7 +331,7 @@ mod tests {
             assert!(!r.id.is_empty());
             assert!(!r.object.is_empty());
             assert!(r.created > 0);
-            assert_eq!(r.model, models::Model::Llava157bhf);
+            assert_eq!(r.model, "llava-1.5-7b-hf".to_string());
 
             assert!(!r.choices.is_empty());
 
@@ -593,16 +583,13 @@ mod tests {
 
     #[test]
     fn embedding_invalid_model() {
-        let pg_env = client::PgEnvironment {
-            key: "api-key".to_string(),
-            host: String::new(),
-        };
+        let pg_env = client::PgEnvironment::from_env().expect("environment variables");
 
         let clt = client::Client::new(pg_env).expect("client value");
 
         tokio_test::block_on(async {
             let req = embedding::Request::new(
-                models::Model::Hermes2ProMistral7B,
+                "invalid model".to_string(),
                 Some("Skyline with Airplane".to_string()),
                 None,
             )
@@ -635,7 +622,7 @@ mod tests {
 
         tokio_test::block_on(async {
             let req = embedding::Request::new(
-                models::Model::BridgetowerLargeItmMlmItc,
+                "bridgetower-large-itm-mlm-itc".to_string(),
                 Some("Skyline with Airplane".to_string()),
                 None,
             )
@@ -652,7 +639,7 @@ mod tests {
 
             assert!(!r.id.is_empty());
             assert!(!r.object.is_empty());
-            assert_eq!(r.model, models::Model::BridgetowerLargeItmMlmItc);
+            assert_eq!(r.model, "bridgetower-large-itm-mlm-itc".to_string());
             assert!(r.created > 0);
 
             assert!(!&r.data[0].object.is_empty());

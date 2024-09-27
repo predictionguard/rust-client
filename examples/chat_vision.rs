@@ -3,7 +3,7 @@
 extern crate prediction_guard as pg_client;
 
 use pg_client::chat::MessageVision;
-use pg_client::{chat, client, models};
+use pg_client::{chat, client};
 
 #[tokio::main]
 async fn main() {
@@ -11,7 +11,12 @@ async fn main() {
 
     let clt = client::Client::new(pg_env).expect("client value");
 
-    let req = chat::Request::<MessageVision>::new(models::Model::Llava157bhf)
+    // Load the list of models available for chat vision.
+    let models = clt.retrieve_chat_vision_models().await.expect("model list");
+
+    assert!(!models.is_empty());
+
+    let req = chat::Request::<MessageVision>::new(models[0].clone())
         .temperature(0.10)
         .top_p(0.1)
         .top_k(50)

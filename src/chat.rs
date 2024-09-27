@@ -2,10 +2,11 @@
 //! and chat events.
 use serde::{self, Deserialize, Serialize};
 
-use crate::{models, pii};
+use crate::pii;
 
 /// Path to the completions chat endpoint.
 pub const PATH: &str = "/chat/completions";
+pub const PATH_VISION_MODELS: &str = "/chat/completions/vision";
 
 const IMAGE_URL_TYPE: &str = "image_url";
 const TEXT_TYPE: &str = "text";
@@ -51,8 +52,7 @@ pub struct MessageVision {
 /// Used to send a request for chat.
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Request<T> {
-    #[serde(deserialize_with = "models::deserialize_models")]
-    pub(crate) model: models::Model,
+    pub(crate) model: String,
     messages: Vec<T>,
     max_tokens: i64,
     temperature: f64,
@@ -127,7 +127,7 @@ impl<T> Request<T> {
     /// ## Arguments
     ///
     /// * `model` - The model to be used for the request.
-    pub fn new(model: models::Model) -> Self {
+    pub fn new(model: String) -> Self {
         Self {
             model,
             messages: Vec::new(),
@@ -286,8 +286,7 @@ pub struct Response {
     pub id: String,
     pub object: String,
     pub created: i64,
-    #[serde(deserialize_with = "models::deserialize_models")]
-    pub model: models::Model,
+    pub model: String,
     pub choices: Vec<ResponseChoice>,
 }
 
@@ -316,8 +315,7 @@ pub struct ResponseEvents {
     pub id: String,
     pub object: String,
     pub created: i64,
-    #[serde(deserialize_with = "models::deserialize_models")]
-    pub model: models::Model,
+    pub model: String,
     pub choices: Vec<ChoiceEvents>,
     pub error: Option<String>,
 }
@@ -336,7 +334,6 @@ pub enum Roles {
 
 #[cfg(test)]
 mod tests {
-    use crate::models;
     use crate::pii::{InputMethod, ReplaceMethod};
 
     use super::*;
@@ -346,7 +343,7 @@ mod tests {
 
     #[test]
     fn chat_request() {
-        let req = Request::<Message>::new(models::Model::NeuralChat7B)
+        let req = Request::<Message>::new("Hermes-2-Pro-Llama-3-8B".to_string())
             .temperature(0.1)
             .max_tokens(1000)
             .top_p(12.6)
@@ -354,7 +351,7 @@ mod tests {
             .input(true, None)
             .output(true, true);
 
-        assert_eq!(req.model, models::Model::NeuralChat7B);
+        assert_eq!(req.model, "Hermes-2-Pro-Llama-3-8B".to_string());
         assert_eq!(req.temperature, 0.1);
         assert_eq!(req.max_tokens, 1000);
         assert_eq!(req.top_p.expect("Some to_p"), 12.6);
@@ -375,7 +372,7 @@ mod tests {
 
     #[test]
     fn chat_request_vision() {
-        let req = Request::<MessageVision>::new(models::Model::Llava157bhf)
+        let req = Request::<MessageVision>::new("llava-1.5-7b-hf".to_string())
             .temperature(0.2)
             .max_tokens(2000)
             .top_p(12.1)
@@ -383,7 +380,7 @@ mod tests {
             .input(true, Some((InputMethod::Block, ReplaceMethod::Fake)))
             .output(true, true);
 
-        assert_eq!(req.model, models::Model::Llava157bhf);
+        assert_eq!(req.model, "llava-1.5-7b-hf".to_string());
         assert_eq!(req.temperature, 0.2);
         assert_eq!(req.max_tokens, 2000);
         assert_eq!(req.top_p.expect("Some to_p"), 12.1);

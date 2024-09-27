@@ -12,7 +12,6 @@ use reqwest::{
 use serde::{Deserialize, Serialize};
 
 use crate::built_info;
-use crate::models::{model_valid_for_call, CHAT_MODELS, VISION_MODELS};
 use crate::{chat, completion, embedding, factuality, injection, pii, toxicity, translate, Result};
 
 const USER_AGENT: &str = "Prediction Guard Rust Client";
@@ -258,10 +257,6 @@ impl Client {
         &self,
         req: &chat::Request<chat::Message>,
     ) -> Result<Option<chat::Response>> {
-        if !model_valid_for_call(&CHAT_MODELS, &req.model) {
-            return Err(Box::from("invalid model specified for call"));
-        }
-
         let url = format!("{}{}", &self.inner.server, chat::PATH);
 
         let result = self
@@ -305,10 +300,6 @@ impl Client {
     where
         F: FnMut(&String),
     {
-        if !model_valid_for_call(&CHAT_MODELS, &req.model) {
-            return Err(Box::from("invalid model specified for call"));
-        }
-
         let url = format!("{}{}", &self.inner.server, chat::PATH);
 
         req.stream = true;
@@ -378,6 +369,30 @@ impl Client {
         Ok(None)
     }
 
+    /// Retrieves the list of models available for the chat completion endpoint.
+    ///
+    /// Returns a vector of strings with the model names. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
+    pub async fn retrieve_chat_completion_models(&self) -> Result<Vec<String>> {
+        let url = format!("{}{}", &self.inner.server, chat::PATH);
+
+        let result = self
+            .inner
+            .http_client
+            .get(url)
+            .headers(self.inner.headers.clone())
+            .send()
+            .await?;
+
+        if result.status() != StatusCode::OK {
+            return Err(retrieve_error(result).await);
+        }
+
+        let chat_response = result.json::<Vec<String>>().await?;
+
+        Ok(chat_response)
+    }
+
     /// Calls the generate chat completion endpoint for chat vision.
     ///
     /// ## Arguments:
@@ -390,10 +405,6 @@ impl Client {
         &self,
         req: &chat::Request<chat::MessageVision>,
     ) -> Result<Option<chat::Response>> {
-        if !model_valid_for_call(&VISION_MODELS, &req.model) {
-            return Err(Box::from("invalid model specified for call"));
-        }
-
         let url = format!("{}{}", &self.inner.server, chat::PATH);
 
         let result = self
@@ -412,6 +423,30 @@ impl Client {
         let chat_response = result.json::<chat::Response>().await?;
 
         Ok(Some(chat_response))
+    }
+
+    /// Retrieves the list of models available for the chat vision endpoint.
+    ///
+    /// Returns a vector of strings with the model names. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
+    pub async fn retrieve_chat_vision_models(&self) -> Result<Vec<String>> {
+        let url = format!("{}{}", &self.inner.server, chat::PATH_VISION_MODELS);
+
+        let result = self
+            .inner
+            .http_client
+            .get(url)
+            .headers(self.inner.headers.clone())
+            .send()
+            .await?;
+
+        if result.status() != StatusCode::OK {
+            return Err(retrieve_error(result).await);
+        }
+
+        let chat_response = result.json::<Vec<String>>().await?;
+
+        Ok(chat_response)
     }
 
     /// Calls the factuality check endpoint.
