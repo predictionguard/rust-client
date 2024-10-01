@@ -6,9 +6,7 @@ use pg_client::{chat, client};
 
 #[tokio::main]
 async fn main() {
-    let pg_env = client::PgEnvironment::from_env().expect("env keys");
-
-    let clt = client::Client::new(pg_env).expect("client value");
+    let clt = client::Client::new().expect("client value");
 
     // Load the list of models available for chat completion.
     let models = clt
@@ -18,12 +16,13 @@ async fn main() {
 
     assert!(!models.is_empty());
 
-    let req = chat::Request::<chat::Message>::new(models[0].clone())
+    // use last moddel returned in the list.
+    let req = chat::Request::<chat::Message>::new(models[models.len() - 1].to_string())
         .add_message(
             chat::Roles::User,
             "How do you feel about the world in general?".to_string(),
         )
-        .max_tokens(300)
+        .max_tokens(1000)
         .temperature(0.1)
         .top_p(0.1)
         .top_k(50);

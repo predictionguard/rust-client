@@ -6,8 +6,6 @@ use pg_client::{client, embedding, image};
 
 #[tokio::main]
 async fn main() {
-    let pg_env = client::PgEnvironment::from_env().expect("env keys");
-
     let img_str = match image::encode(
         "https://farm4.staticflickr.com/3300/3497460990_11dfb95dd1_z.jpg".to_string(),
     )
@@ -17,7 +15,7 @@ async fn main() {
         Err(_) => None,
     };
 
-    let clt = client::Client::new(pg_env).expect("client value");
+    let clt = client::Client::new().expect("client value");
 
     // Load the list of models available for completion.
     let models = clt.retrieve_embedding_models().await.expect("model list");

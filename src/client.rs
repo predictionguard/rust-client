@@ -77,16 +77,24 @@ struct ClientInner {
 }
 
 impl Client {
+    /// Creates a new instance of client to be used. Assumes the Prediction Guard keys,
+    /// PREDICTIONGUARD_API_KEY and PREDICTIONGUARD_URL are set in the environment.
+    pub fn new() -> Result<Self> {
+        let pg_env = PgEnvironment::from_env().expect("env keys");
+
+        Self::from_environment(pg_env)
+    }
+
     /// Creates a new instance of client to be used with a particular Prediction Guard environment.
     ///
     ///  ## Arguments:
     ///
     ///  * `pg_env` - the prediction guard environment to connect to.
-    pub fn new(pg_env: PgEnvironment) -> Result<Self> {
+    pub fn from_environment(pg_env: PgEnvironment) -> Result<Self> {
         let user_agent = format!("{} v{}", USER_AGENT, built_info::PKG_VERSION);
 
         let http = ClientBuilder::new()
-            .connect_timeout(Duration::new(15, 0))
+            .connect_timeout(Duration::new(30, 0))
             .read_timeout(Duration::new(30, 0))
             .timeout(Duration::new(45, 0))
             .user_agent(user_agent)
@@ -444,9 +452,9 @@ impl Client {
             return Err(retrieve_error(result).await);
         }
 
-        let chat_response = result.json::<Vec<String>>().await?;
+        let chat_vision = result.json::<Vec<String>>().await?;
 
-        Ok(chat_response)
+        Ok(chat_vision)
     }
 
     /// Calls the factuality check endpoint.

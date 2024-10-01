@@ -164,6 +164,7 @@ pub struct Choice {
 pub struct Response {
     pub id: String,
     pub object: String,
+    pub model: String,
     pub created: i64,
     pub choices: Vec<Choice>,
 }
