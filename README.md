@@ -22,11 +22,9 @@ use pg_client::{chat, client, models};
 
 #[tokio::main]
 async fn main() {
-    let pg_env = client::PgEnvironment::from_env().expect("env keys");
+    let clt = client::Client::new().expect("client value");
 
-    let clt = client::Client::new(pg_env).expect("client value");
-
-    let req = chat::Request::<chat::Message>::new(models::Model::NeuralChat7B)
+    let req = chat::Request::<chat::Message>::new("NeuralChat7B".to_string())
         .add_message(
             chat::Roles::User,
             "How do you feel about the world in general?".to_string(),
