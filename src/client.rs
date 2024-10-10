@@ -1,18 +1,19 @@
 //! Used to connect to the Prediction Guard API.
 use std::{env, fmt, sync::Arc, time::Duration};
 
+use crate::built_info;
+use crate::{chat, completion, embedding, factuality, injection, pii, toxicity, translate, Result};
 use dotenvy;
 use eventsource_client::Client as EventClient;
 use eventsource_client::SSE;
 use futures::TryStreamExt;
+use log::error;
 use reqwest::{
     header::{HeaderMap, HeaderValue},
     ClientBuilder, Response, StatusCode,
 };
 use serde::{Deserialize, Serialize};
-
-use crate::built_info;
-use crate::{chat, completion, embedding, factuality, injection, pii, toxicity, translate, Result};
+use tokio::sync::mpsc::Sender;
 
 const USER_AGENT: &str = "Prediction Guard Rust Client";
 
@@ -326,7 +327,6 @@ impl Client {
             .body(body)
             .build();
 
-        // TODO: Add Timeouts
         let mut stream = Box::pin(client.stream());
 
         loop {
@@ -362,6 +362,103 @@ impl Client {
 
                             let msg = resp.choices[0].delta.clone().content;
                             event_handler(&msg);
+                        }
+                    }
+                }
+
+                Ok(None) => continue,
+                Err(e) => match e {
+                    eventsource_client::Error::StreamClosed => break,
+                    _ => return Err(stream_error_into_api_err(e).await),
+                },
+            }
+        }
+
+        Ok(None)
+    }
+
+    /// Calls the generate chat completion endpoint.
+    ///
+    /// ## Arguments:
+    ///
+    /// * `req` - An instance of [`chat::Request::<Message>`]
+    /// * `sender` - A sender instance for a channel where there is a receiver waiting for a message.
+    ///
+    /// Returns an instance of [`chat::Response`].
+    ///
+    /// The generated text is returned via events from the server. The sender gets called
+    /// every time the client receives an event response with data. Once the server terminates the events the call returns.
+    /// The receiver should handle the `STOP` message which means there are no more messages to receive and exit.
+    /// The entire [`chat::Response`] response is then returned to the caller.
+    ///
+    /// A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
+    pub async fn generate_chat_completion_events_async(
+        &self,
+        req: &mut chat::Request<chat::Message>,
+        sender: &Sender<String>,
+    ) -> Result<Option<chat::ResponseEvents>> {
+        let url = format!("{}{}", &self.inner.server, chat::PATH);
+
+        req.stream = true;
+        req.output = None;
+
+        let body = serde_json::to_string(&req)?;
+
+        let user_agent = format!("{} v{}", USER_AGENT, built_info::PKG_VERSION);
+
+        let key = format!("Bearer {}", &self.inner.api_key);
+
+        let client = eventsource_client::ClientBuilder::for_url(&url)?
+            .header("User-Agent", user_agent.as_str())?
+            .header("Authorization", &key)?
+            .method("POST".to_string())
+            .body(body)
+            .build();
+
+        let mut stream = Box::pin(client.stream());
+
+        loop {
+            match stream.try_next().await {
+                Ok(Some(event)) => {
+                    match event {
+                        SSE::Comment(_) => continue,
+                        SSE::Event(evt) => {
+                            // Check for [DONE]
+                            if evt.data == "[DONE]" {
+                                let _ = sender.send("STOP".to_string()).await;
+                                return Ok(None);
+                            }
+
+                            // JSON Response
+                            let resp: chat::ResponseEvents = match serde_json::from_str(&evt.data) {
+                                Ok(v) => v,
+                                Err(e) => {
+                                    return Err(Box::from(ApiError {
+                                        error: format!("error parsing stream response: {}", e),
+                                    }));
+                                }
+                            };
+
+                            if resp.choices.is_empty() {
+                                // No data to stream or Done
+                                continue;
+                            }
+
+                            // Finish Reason == Stop That is the final Response.
+                            if resp.choices[0].finish_reason == Some("stop".to_string()) {
+                                let _ = sender.send("STOP".to_string()).await;
+                                return Ok(Some(resp));
+                            }
+
+                            let msg = resp.choices[0].delta.clone().content;
+
+                            match sender.send(msg).await {
+                                Ok(_) => (),
+                                Err(e) => {
+                                    error!("generate_chat_completion_events_async - error sending on channel, {e}");
+                                }
+                            }
                         }
                     }
                 }

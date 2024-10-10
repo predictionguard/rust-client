@@ -1,6 +1,6 @@
 [package]
 name = "prediction-guard"
-version = "0.11.0"
+version = "0.12.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Ed Gonzalez <ed.gonzalez@predictionguard.com>"]
@@ -24,7 +24,8 @@ futures = "0.3"
 dotenvy = "0.15"
 base64 = "0.22.1"
 async-trait = "0.1"
-
+log = "0.4.22"
+tokio = "1.40"
 
 [dev-dependencies]
 tokio-test = "0.4"
