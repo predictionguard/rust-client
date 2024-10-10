@@ -47,9 +47,9 @@ pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 mod tests {
     use std::io::Write;
 
-    use httpmock::prelude::*;
-
     use crate::chat::MessageVision;
+    use httpmock::prelude::*;
+    use tokio::sync::mpsc;
 
     use super::*;
 
@@ -194,6 +194,69 @@ mod tests {
             assert!(r.choices[0].finish_reason.is_some());
 
             assert!(r.choices[0].delta.content.is_empty());
+        });
+    }
+
+    #[test]
+    #[ignore]
+    // Test is ignored since we don't currently have a way to mock the SSE from the server.
+    // The test can be run against the live api.
+    fn chat_completion_stream_async() {
+        let clt = client::Client::new().expect("client value");
+
+        let mut req = chat::Request::<chat::Message>::new("Hermes-2-Pro-Llama-3-8B".to_string())
+            .add_message(
+                chat::Roles::User,
+                "How do you feel about the world in general".to_string(),
+            )
+            .max_tokens(1000)
+            .temperature(1.1);
+
+        tokio_test::block_on(async {
+            let (tx, mut rx) = mpsc::channel::<String>(32);
+
+            // Launch in separate thread.
+            tokio::spawn(async move {
+                let result = clt
+                    .generate_chat_completion_events_async(&mut req, &tx)
+                    .await
+                    .expect("error from chat_events");
+
+                assert!(result.is_some());
+                let r = result.expect("response to to be valid");
+
+                println!("\n\nchat completion response:\n{:?}\n\n", r);
+
+                assert!(!r.id.is_empty());
+                assert!(!r.object.is_empty());
+                assert!(r.created > 0);
+                assert_eq!(r.model, "Hermes-2-Pro-Llama-3-8B".to_string());
+
+                assert!(r.choices[0].generated_text.is_some());
+                assert!(r.choices[0].index >= 0);
+                assert!(r.choices[0].finish_reason.is_some());
+
+                assert!(r.choices[0].delta.content.is_empty());
+            });
+
+            let lock = std::io::stdout().lock();
+            let mut buf = std::io::BufWriter::new(lock);
+
+            loop {
+                match rx.recv().await {
+                    Some(msg) => {
+                        if msg == "STOP".to_string() {
+                            break;
+                        }
+
+                        let _ = buf.write(msg.as_bytes());
+                        let _ = buf.flush();
+                    }
+                    None => {
+                        break;
+                    }
+                }
+            }
         });
     }
 

@@ -42,6 +42,9 @@ curl-chat-sse:
 run-chat-sse:
 	cargo run --example chat_sse
 
+run-chat-sse-async:
+	cargo run --example chat_sse_async
+
 curl-chat-vision:
 	curl -il -X POST https://api.predictionguard.com/chat/completions \
      -H "Authorization: Bearer ${PREDICTIONGUARD_API_KEY}" \
