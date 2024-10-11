@@ -27,8 +27,7 @@ async fn main() {
         models[0].to_string(),
         Some("skyline with a flying horse".to_string()),
         img_str,
-    )
-    .await;
+    );
 
     let result = clt.embedding(&req).await.expect("error from embeddings");
 

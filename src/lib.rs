@@ -658,8 +658,7 @@ mod tests {
                 "invalid model".to_string(),
                 Some("Skyline with Airplane".to_string()),
                 None,
-            )
-            .await;
+            );
 
             let result = clt.embedding(&req).await;
 
@@ -691,8 +690,7 @@ mod tests {
                 "bridgetower-large-itm-mlm-itc".to_string(),
                 Some("Skyline with Airplane".to_string()),
                 None,
-            )
-            .await;
+            );
 
             let result = clt.embedding(&req).await.expect("error from embedding");
 
