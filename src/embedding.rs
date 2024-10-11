@@ -7,8 +7,8 @@ pub(crate) const PATH: &str = "/embeddings";
 /// Input data type to contain text and/or a base64 encoded image.
 #[derive(Serialize, Clone, Default, Deserialize, Debug)]
 pub struct Input {
-    text: Option<String>,
-    image: Option<String>,
+    pub text: Option<String>,
+    pub image: Option<String>,
 }
 
 /// Request data type used for the embedding endpoint.
@@ -26,7 +26,7 @@ impl Request {
     /// * `model` - The model to be used for the request.
     /// * `text` - The text used to generate the embedding.
     /// * `image` - A base64 encoded image used to generate the embedding.
-    pub async fn new(model: String, text: Option<String>, image: Option<String>) -> Request {
+    pub fn new(model: String, text: Option<String>, image: Option<String>) -> Request {
         Self {
             model,
             input: vec![Input { text, image }],
