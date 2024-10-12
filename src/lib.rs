@@ -9,21 +9,24 @@
 //!
 //! use prediction_guard::{chat, client};
 //!
-//! let clt = client::Client::new().expect("client value");
+//! #[tokio::main]
+//! async fn main() {
+//!     let clt = client::Client::new().expect("client value");
 //!
-//! let req = chat::Request::<chat::Message>::new("NeuralChat7B".to_string())
-//!             .add_message(
-//!                 chat::Roles::User,
-//!                 "How do you feel about the world in general?".to_string(),
-//!             )
-//!             .max_tokens(1000)
-//!             .temperature(0.85);
+//!     let req = chat::Request::<chat::Message>::new("Neural-Chat-7B".to_string())
+//!                 .add_message(
+//!                     chat::Roles::User,
+//!                     "How do you feel about the world in general?".to_string(),
+//!                 )
+//!                 .max_tokens(1000)
+//!                 .temperature(0.85);
 //!
-//! let result = clt.generate_chat_completion(&req)
-//!                 .await
-//!                 .expect("error from generate chat completion");
+//!     let result = clt.generate_chat_completion(&req)
+//!                     .await
+//!                     .expect("error from generate chat completion");
 //!
-//! println!("\nchat completion response:\n\n {:?}", result);
+//!     println!("\nchat completion response:\n\n {:?}", result);
+//! }
 //!
 //! ```
 //! See the `/examples` directory for more examples.
@@ -74,12 +77,8 @@ mod tests {
 
             health_mock.assert();
 
-            assert!(result.is_some());
-
-            let txt = result.expect("text");
-            assert!(!txt.is_empty());
-
-            println!("\n\nhealth endpoint response: {}\n\n", txt);
+            assert!(!result.is_empty());
+            println!("\n\nhealth endpoint response: {}\n\n", result);
         });
     }
 
@@ -134,17 +133,14 @@ mod tests {
 
             completion_mock.assert();
 
-            assert!(result.is_some());
-            let r = result.expect("response to to be valid");
+            println!("\n\ncompletion response:\n{:?}\n\n", result);
 
-            println!("\n\ncompletion response:\n{:?}\n\n", r);
+            assert!(!result.id.is_empty());
+            assert!(!result.object.is_empty());
+            assert!(result.created > 0);
 
-            assert!(!r.id.is_empty());
-            assert!(!r.object.is_empty());
-            assert!(r.created > 0);
-
-            assert!(!r.choices[0].text.is_empty());
-            assert!(r.choices[0].index >= 0);
+            assert!(!result.choices[0].text.is_empty());
+            assert!(result.choices[0].index >= 0);
         });
     }
 
@@ -311,21 +307,18 @@ mod tests {
 
             chat_completion_mock.assert();
 
-            assert!(result.is_some());
-            let r = result.expect("response to to be valid");
+            println!("\n\nchat completion response:\n{:?}\n\n", result);
 
-            println!("\n\nchat completion response:\n{:?}\n\n", r);
+            assert!(!result.id.is_empty());
+            assert!(!result.object.is_empty());
+            assert!(result.created > 0);
+            assert_eq!(result.model, "Neural-Chat-7B".to_string());
 
-            assert!(!r.id.is_empty());
-            assert!(!r.object.is_empty());
-            assert!(r.created > 0);
-            assert_eq!(r.model, "Neural-Chat-7B".to_string());
+            assert!(!result.choices.is_empty());
 
-            assert!(!r.choices.is_empty());
-
-            assert!(r.choices[0].index >= 0);
-            assert_eq!(r.choices[0].message.role, chat::Roles::Assistant);
-            assert!(!r.choices[0].message.content.is_empty());
+            assert!(result.choices[0].index >= 0);
+            assert_eq!(result.choices[0].message.role, chat::Roles::Assistant);
+            assert!(!result.choices[0].message.content.is_empty());
         });
     }
 
@@ -388,21 +381,18 @@ mod tests {
 
             chat_vision_mock.assert();
 
-            assert!(result.is_some());
-            let r = result.expect("response to to be valid");
+            println!("\n\nchat completion response:\n{:?}\n\n", result);
 
-            println!("\n\nchat completion response:\n{:?}\n\n", r);
+            assert!(!result.id.is_empty());
+            assert!(!result.object.is_empty());
+            assert!(result.created > 0);
+            assert_eq!(result.model, "llava-1.5-7b-hf".to_string());
 
-            assert!(!r.id.is_empty());
-            assert!(!r.object.is_empty());
-            assert!(r.created > 0);
-            assert_eq!(r.model, "llava-1.5-7b-hf".to_string());
+            assert!(!result.choices.is_empty());
 
-            assert!(!r.choices.is_empty());
-
-            assert!(r.choices[0].index >= 0);
-            assert_eq!(r.choices[0].message.role, chat::Roles::Assistant);
-            assert!(!r.choices[0].message.content.is_empty());
+            assert!(result.choices[0].index >= 0);
+            assert_eq!(result.choices[0].message.role, chat::Roles::Assistant);
+            assert!(!result.choices[0].message.content.is_empty());
         });
     }
 
@@ -438,17 +428,13 @@ mod tests {
 
             factuality_mock.assert();
 
-            assert!(result.is_some());
+            println!("\n\nfactuality response:\n{:?}\n\n", result);
 
-            let r = result.expect("response to to be valid");
+            assert!(!result.id.is_empty());
+            assert!(!result.object.is_empty());
+            assert!(result.created > 0);
 
-            println!("\n\nfactuality response:\n{:?}\n\n", r);
-
-            assert!(!r.id.is_empty());
-            assert!(!r.object.is_empty());
-            assert!(r.created > 0);
-
-            let checks = r.checks;
+            let checks = result.checks;
             assert!(!checks.is_empty());
             assert!(checks[0].score > 0.0);
             assert!(checks[0].index >= 0);
@@ -484,19 +470,15 @@ mod tests {
 
             injection_mock.assert();
 
-            assert!(result.is_some());
+            println!("\n\ninjection response:\n{:?}\n\n", result);
 
-            let r = result.expect("response to to be valid");
+            assert!(!result.id.is_empty());
+            assert!(!result.object.is_empty());
+            assert!(!result.created.is_empty());
 
-            println!("\n\ninjection response:\n{:?}\n\n", r);
-
-            assert!(!r.id.is_empty());
-            assert!(!r.object.is_empty());
-            assert!(!r.created.is_empty());
-
-            assert!(!r.checks.is_empty());
-            assert!(r.checks[0].probability > 0.0);
-            assert!(r.checks[0].index >= 0);
+            assert!(!result.checks.is_empty());
+            assert!(result.checks[0].probability > 0.0);
+            assert!(result.checks[0].index >= 0);
         });
     }
 
@@ -530,20 +512,16 @@ mod tests {
 
             pii_mock.assert();
 
-            assert!(result.is_some());
+            println!("\n\npii response:\n{:?}\n\n", result);
 
-            let r = result.expect("response to to be valid");
+            assert!(!result.id.is_empty());
+            assert!(!result.object.is_empty());
+            assert!(!result.created.is_empty());
 
-            println!("\n\npii response:\n{:?}\n\n", r);
+            assert!(!result.checks.is_empty());
 
-            assert!(!r.id.is_empty());
-            assert!(!r.object.is_empty());
-            assert!(!r.created.is_empty());
-
-            assert!(!r.checks.is_empty());
-
-            assert!(!r.checks[0].new_prompt.is_empty());
-            assert!(r.checks[0].index >= 0);
+            assert!(!result.checks[0].new_prompt.is_empty());
+            assert!(result.checks[0].index >= 0);
         });
     }
 
@@ -575,20 +553,16 @@ mod tests {
 
             toxicity_mock.assert();
 
-            assert!(result.is_some());
+            println!("\n\ntoxicity response:\n{:?}\n\n", result);
 
-            let r = result.expect("response to to be valid");
+            assert!(!result.id.is_empty());
+            assert!(!result.object.is_empty());
+            assert!(result.created >= 0);
 
-            println!("\n\ntoxicity response:\n{:?}\n\n", r);
+            assert!(!result.checks.is_empty());
 
-            assert!(!r.id.is_empty());
-            assert!(!r.object.is_empty());
-            assert!(r.created >= 0);
-
-            assert!(!r.checks.is_empty());
-
-            assert!(r.checks[0].score >= 0.0);
-            assert!(r.checks[0].index >= 0);
+            assert!(result.checks[0].score >= 0.0);
+            assert!(result.checks[0].index >= 0);
         });
     }
 
@@ -623,26 +597,22 @@ mod tests {
 
             translate_mock.assert();
 
-            assert!(result.is_some());
+            println!("\n\ntranslation response:\n{:?}\n\n", result);
 
-            let r = result.expect("response to to be valid");
+            assert!(!result.id.is_empty());
+            assert!(!result.object.is_empty());
+            assert!(result.created >= 0);
 
-            println!("\n\ntranslation response:\n{:?}\n\n", r);
+            assert!(!result.best_translation.is_empty());
+            assert_ne!(result.best_score, 0.0);
+            assert!(!result.best_translation_model.is_empty());
 
-            assert!(!r.id.is_empty());
-            assert!(!r.object.is_empty());
-            assert!(r.created >= 0);
+            assert!(!result.translations.is_empty());
 
-            assert!(!r.best_translation.is_empty());
-            assert_ne!(r.best_score, 0.0);
-            assert!(!r.best_translation_model.is_empty());
-
-            assert!(!r.translations.is_empty());
-
-            assert_ne!(r.translations[0].score, 0.0);
-            assert!(!r.translations[0].translation.is_empty());
-            assert!(!r.translations[0].model.is_empty());
-            assert!(!r.translations[0].status.is_empty());
+            assert_ne!(result.translations[0].score, 0.0);
+            assert!(!result.translations[0].translation.is_empty());
+            assert!(!result.translations[0].model.is_empty());
+            assert!(!result.translations[0].status.is_empty());
         });
     }
 
@@ -696,19 +666,16 @@ mod tests {
 
             embed_mock.assert();
 
-            assert!(result.is_some());
-            let r = result.expect("response to to be valid");
+            println!("\n\nembedding response:\n{:?}\n\n", result);
 
-            println!("\n\nembedding response:\n{:?}\n\n", r);
+            assert!(!result.id.is_empty());
+            assert!(!result.object.is_empty());
+            assert_eq!(result.model, "bridgetower-large-itm-mlm-itc".to_string());
+            assert!(result.created > 0);
 
-            assert!(!r.id.is_empty());
-            assert!(!r.object.is_empty());
-            assert_eq!(r.model, "bridgetower-large-itm-mlm-itc".to_string());
-            assert!(r.created > 0);
-
-            assert!(!&r.data[0].object.is_empty());
-            assert!(r.data[0].index >= 0);
-            assert!(!&r.data[0].embedding.is_empty());
+            assert!(!&result.data[0].object.is_empty());
+            assert!(result.data[0].index >= 0);
+            assert!(!&result.data[0].embedding.is_empty());
         });
     }
 
