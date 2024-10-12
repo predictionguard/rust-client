@@ -127,7 +127,7 @@ impl Client {
     ///
     /// Returns the text response from the server. A 200 (Ok) status code is expected from
     /// Prediction Guard api. Any other status code is considered an error.
-    pub async fn check_health(&self) -> Result<Option<String>> {
+    pub async fn check_health(&self) -> Result<String> {
         let result = self
             .inner
             .http_client
@@ -142,7 +142,7 @@ impl Client {
 
         let txt = result.text().await?;
 
-        Ok(Some(txt))
+        Ok(txt)
     }
 
     /// Calls the embedding endpoint.
@@ -153,7 +153,7 @@ impl Client {
     ///
     /// Returns a [`embedding::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
-    pub async fn embedding(&self, req: &embedding::Request) -> Result<Option<embedding::Response>> {
+    pub async fn embedding(&self, req: &embedding::Request) -> Result<embedding::Response> {
         let url = format!("{}{}", &self.inner.server, embedding::PATH);
 
         let result = self
@@ -171,7 +171,7 @@ impl Client {
 
         let embed_response = result.json::<embedding::Response>().await?;
 
-        Ok(Some(embed_response))
+        Ok(embed_response)
     }
 
     /// Retrieves the list of models available for the embeddings endpoint.
@@ -209,7 +209,7 @@ impl Client {
     pub async fn generate_completion(
         &self,
         req: &completion::Request,
-    ) -> Result<Option<completion::Response>> {
+    ) -> Result<completion::Response> {
         let url = format!("{}{}", &self.inner.server, completion::PATH);
 
         let result = self
@@ -227,7 +227,7 @@ impl Client {
 
         let comp_response = result.json::<completion::Response>().await?;
 
-        Ok(Some(comp_response))
+        Ok(comp_response)
     }
 
     /// Retrieves the list of models available for the completion endpoint.
@@ -265,7 +265,7 @@ impl Client {
     pub async fn generate_chat_completion(
         &self,
         req: &chat::Request<chat::Message>,
-    ) -> Result<Option<chat::Response>> {
+    ) -> Result<chat::Response> {
         let url = format!("{}{}", &self.inner.server, chat::PATH);
 
         let result = self
@@ -283,7 +283,7 @@ impl Client {
 
         let chat_response = result.json::<chat::Response>().await?;
 
-        Ok(Some(chat_response))
+        Ok(chat_response)
     }
 
     /// Calls the generate chat completion endpoint.
@@ -388,7 +388,7 @@ impl Client {
     ///
     /// The generated text is returned via events from the server. The sender gets called
     /// every time the client receives an event response with data. Once the server terminates the events the call returns.
-    /// The receiver should handle the `STOP` message which means there are no more messages to receive and exit.
+    /// The receiver should handle the `stop` message which means there are no more messages to receive and exit.
     /// The entire [`chat::Response`] response is then returned to the caller.
     ///
     /// A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
@@ -425,8 +425,8 @@ impl Client {
                         SSE::Comment(_) => continue,
                         SSE::Event(evt) => {
                             // Check for [DONE]
-                            if evt.data == "[DONE]" {
-                                let _ = sender.send("STOP".to_string()).await;
+                            if evt.data.to_lowercase() == "[done]" {
+                                let _ = sender.send("stop".to_string()).await;
                                 return Ok(None);
                             }
 
@@ -447,7 +447,7 @@ impl Client {
 
                             // Finish Reason == Stop That is the final Response.
                             if resp.choices[0].finish_reason == Some("stop".to_string()) {
-                                let _ = sender.send("STOP".to_string()).await;
+                                let _ = sender.send("stop".to_string()).await;
                                 return Ok(Some(resp));
                             }
 
@@ -509,7 +509,7 @@ impl Client {
     pub async fn generate_chat_vision(
         &self,
         req: &chat::Request<chat::MessageVision>,
-    ) -> Result<Option<chat::Response>> {
+    ) -> Result<chat::Response> {
         let url = format!("{}{}", &self.inner.server, chat::PATH);
 
         let result = self
@@ -527,7 +527,7 @@ impl Client {
 
         let chat_response = result.json::<chat::Response>().await?;
 
-        Ok(Some(chat_response))
+        Ok(chat_response)
     }
 
     /// Retrieves the list of models available for the chat vision endpoint.
@@ -565,7 +565,7 @@ impl Client {
     pub async fn check_factuality(
         &self,
         req: &factuality::Request,
-    ) -> Result<Option<factuality::Response>> {
+    ) -> Result<factuality::Response> {
         let url = format!("{}{}", &self.inner.server, factuality::PATH);
 
         let result = self
@@ -583,7 +583,7 @@ impl Client {
 
         let fact_response = result.json::<factuality::Response>().await?;
 
-        Ok(Some(fact_response))
+        Ok(fact_response)
     }
 
     /// Calls the translate endpoint.
@@ -594,7 +594,7 @@ impl Client {
     ///
     /// Returns a [`translate::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
-    pub async fn translate(&self, req: &translate::Request) -> Result<Option<translate::Response>> {
+    pub async fn translate(&self, req: &translate::Request) -> Result<translate::Response> {
         let url = format!("{}{}", &self.inner.server, translate::PATH);
 
         let result = self
@@ -612,7 +612,7 @@ impl Client {
 
         let translate_response = result.json::<translate::Response>().await?;
 
-        Ok(Some(translate_response))
+        Ok(translate_response)
     }
 
     /// Calls the PII endpoint that is used to remove/detect PII information in the request.
@@ -623,7 +623,7 @@ impl Client {
     ///
     /// Returns an instance of [`pii::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api.
     /// Any other status code is considered an error.
-    pub async fn pii(&self, req: &pii::Request) -> Result<Option<pii::Response>> {
+    pub async fn pii(&self, req: &pii::Request) -> Result<pii::Response> {
         let url = format!("{}{}", &self.inner.server, pii::PATH);
 
         let result = self
@@ -641,7 +641,7 @@ impl Client {
 
         let pii_response = result.json::<pii::Response>().await?;
 
-        Ok(Some(pii_response))
+        Ok(pii_response)
     }
 
     /// Calls the injection check endpoint.
@@ -652,7 +652,7 @@ impl Client {
     ///
     /// Returns an instance of [`injection::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
-    pub async fn injection(&self, req: &injection::Request) -> Result<Option<injection::Response>> {
+    pub async fn injection(&self, req: &injection::Request) -> Result<injection::Response> {
         let url = format!("{}{}", &self.inner.server, injection::PATH);
 
         let result = self
@@ -670,7 +670,7 @@ impl Client {
 
         let injection_response = result.json::<injection::Response>().await?;
 
-        Ok(Some(injection_response))
+        Ok(injection_response)
     }
 
     /// Calls the injection check endpoint.
@@ -681,7 +681,7 @@ impl Client {
     ///
     /// Returns an instance of [`toxicity::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
-    pub async fn toxicity(&self, req: &toxicity::Request) -> Result<Option<toxicity::Response>> {
+    pub async fn toxicity(&self, req: &toxicity::Request) -> Result<toxicity::Response> {
         let url = format!("{}{}", &self.inner.server, toxicity::PATH);
 
         let result = self
@@ -699,7 +699,7 @@ impl Client {
 
         let toxicity_response = result.json::<toxicity::Response>().await?;
 
-        Ok(Some(toxicity_response))
+        Ok(toxicity_response)
     }
 }
 
