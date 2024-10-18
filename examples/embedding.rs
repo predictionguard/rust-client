@@ -2,6 +2,7 @@
 //! type [`embedding::Response`].
 extern crate prediction_guard as pg_client;
 
+use pg_client::embedding::Direction;
 use pg_client::{client, embedding, image};
 
 #[tokio::main]
@@ -26,10 +27,28 @@ async fn main() {
     let req = embedding::Request::new(
         models[0].to_string(),
         Some("skyline with a flying horse".to_string()),
-        img_str,
+        img_str.clone(),
     );
 
     let result = clt.embedding(&req).await.expect("error from embeddings");
 
     println!("\n\nembedding response:\n{:?}\n\n", result);
+
+    // Embedding request with truncation on
+    let req_truncation = embedding::Request::new(
+        models[0].to_string(),
+        Some("skyline with a flying horse".to_string()),
+        img_str,
+    )
+    .trunctate(Direction::Right);
+
+    let result_truncation = clt
+        .embedding(&req_truncation)
+        .await
+        .expect("error from embeddings with truncation");
+
+    println!(
+        "\n\nembedding response with truncation:\n{:?}\n\n",
+        result_truncation
+    );
 }

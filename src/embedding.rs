@@ -4,6 +4,15 @@ use serde::{Deserialize, Serialize};
 /// Path to the embedding endpoint.
 pub(crate) const PATH: &str = "/embeddings";
 
+#[derive(Serialize, Clone, Default, Deserialize, Debug)]
+pub enum Direction {
+    #[serde(rename = "Right")]
+    #[default]
+    Right,
+    #[serde(rename = "Left")]
+    Left,
+}
+
 /// Input data type to contain text and/or a base64 encoded image.
 #[derive(Serialize, Clone, Default, Deserialize, Debug)]
 pub struct Input {
@@ -16,6 +25,10 @@ pub struct Input {
 pub struct Request {
     pub(crate) input: Vec<Input>,
     pub(crate) model: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) truncate: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) truncate_direction: Option<Direction>,
 }
 
 impl Request {
@@ -30,7 +43,20 @@ impl Request {
         Self {
             model,
             input: vec![Input { text, image }],
+            truncate: None,
+            truncate_direction: None,
         }
+    }
+
+    /// Sets the trunctate parameter and the truncate direction on the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `truncate_direction` - The enum value of the direction to truncate the embeddings.
+    pub fn trunctate(mut self, direction: Direction) -> Self {
+        self.truncate = Some(true);
+        self.truncate_direction = Some(direction);
+        self
     }
 
     /// Adds input data to the request.
@@ -39,7 +65,7 @@ impl Request {
     ///
     /// * `text` - The text used to generate the embedding.
     /// * `image` - A base64 encoded image used to generate the embedding.
-    pub async fn add_input(mut self, text: Option<String>, image: Option<String>) -> Self {
+    pub fn add_input(mut self, text: Option<String>, image: Option<String>) -> Self {
         self.input.push(Input { text, image });
 
         self
