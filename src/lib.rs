@@ -296,7 +296,7 @@ mod tests {
 
         let clt = client::Client::from_environment(pg_env).expect("client value");
 
-        let req = chat::Request::<chat::Message>::new("Neural-Chat-7B".to_string())
+        let req = chat::Request::<chat::Message>::new("neural-chat-7b-v3-3".to_string())
             .max_tokens(1000)
             .temperature(1.1)
             .add_message(chat::Roles::User, "Will I lose my hair?".to_string());
@@ -701,7 +701,7 @@ mod tests {
         let clt = client::Client::from_environment(pg_env).expect("client value");
 
         let req = tokenize::Request::new(
-            "NeuralChat7B".to_string(),
+            "neural-chat-7b-v3-3".to_string(),
             "Tell me a joke.".to_string(),
         );
 
@@ -719,10 +719,10 @@ mod tests {
             assert!(!result.object.is_empty());
             assert!(result.created > 0);
 
-            let checks = result.checks;
-            assert!(!checks.is_empty());
-            assert!(checks[0].score > 0.0);
-            assert!(checks[0].index >= 0);
+            let tokens = result.tokens;
+            assert!(!tokens.is_empty());
+            assert!(tokens[0].id > 0);
+            assert!(tokens[0].start >= 0);
         });
     }
 

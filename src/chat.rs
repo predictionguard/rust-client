@@ -6,7 +6,7 @@ use crate::pii;
 
 /// Path to the completions chat endpoint.
 pub const PATH: &str = "/chat/completions";
-pub const PATH_VISION_MODELS: &str = "/chat/completions/vision";
+pub const PATH_VISION_MODELS: &str = "/models/chat-with-image";
 
 const IMAGE_URL_TYPE: &str = "image_url";
 const TEXT_TYPE: &str = "text";

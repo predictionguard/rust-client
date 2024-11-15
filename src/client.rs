@@ -2,7 +2,7 @@
 use std::{env, fmt, sync::Arc, time::Duration};
 
 use crate::built_info;
-use crate::{chat, completion, embedding, factuality, injection, pii, toxicity, translate, tokenize, Result};
+use crate::{chat, completion, embedding, factuality, injection, pii, toxicity, translate, tokenize, models, Result};
 use dotenvy;
 use eventsource_client::Client as EventClient;
 use eventsource_client::SSE;
@@ -732,6 +732,40 @@ impl Client {
         let token_response = result.json::<tokenize::Response>().await?;
 
         Ok(token_response)
+    }
+
+
+    /// Retrieves the list of models available.
+    ///
+    /// Returns a vector with the model metadata. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
+    pub async fn retrieve_models(
+        &self,
+        req: Option<&models::Request>
+    ) -> Result<models::Response> {
+        let mut url = format!("{}{}", &self.inner.server, models::PATH);
+
+        // If `req` is Some, append it to the URL
+        if let Some(request) = req {
+            let query_string = format!("/{}", request.to_query_string());
+            url.push_str(&query_string);
+        }
+
+        let result = self
+            .inner
+            .http_client
+            .get(url)
+            .headers(self.inner.headers.clone())
+            .send()
+            .await?;
+
+        if result.status() != StatusCode::OK {
+            return Err(retrieve_error(result).await);
+        }
+
+        let model_response = result.json::<models::Response>().await?;
+
+        Ok(model_response)
     }
 }
 
