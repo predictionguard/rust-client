@@ -2,7 +2,7 @@
 use std::{env, fmt, sync::Arc, time::Duration};
 
 use crate::built_info;
-use crate::{chat, completion, embedding, factuality, injection, pii, toxicity, translate, Result};
+use crate::{chat, completion, embedding, factuality, injection, pii, toxicity, translate, tokenize, Result};
 use dotenvy;
 use eventsource_client::Client as EventClient;
 use eventsource_client::SSE;
@@ -700,6 +700,38 @@ impl Client {
         let toxicity_response = result.json::<toxicity::Response>().await?;
 
         Ok(toxicity_response)
+    }
+
+    /// Calls the tokenize endpoint.
+    ///
+    /// ## Arguments:
+    ///
+    /// * `req` - An instance of [`tokenize::Request`]
+    ///
+    /// Returns an instance of [`tokenize::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
+    pub async fn tokenize(
+        &self,
+        req: &tokenize::Request,
+    ) -> Result<tokenize::Response> {
+        let url = format!("{}{}", &self.inner.server, tokenize::PATH);
+
+        let result = self
+            .inner
+            .http_client
+            .post(url)
+            .headers(self.inner.headers.clone())
+            .json(req)
+            .send()
+            .await?;
+
+        if result.status() != StatusCode::OK {
+            return Err(retrieve_error(result).await);
+        }
+
+        let token_response = result.json::<tokenize::Response>().await?;
+
+        Ok(token_response)
     }
 }
 

@@ -10,7 +10,7 @@ with [Prediction Guard API](https://www.predictionguard.com/) in Rust.
 
 ### Requirements
 
-To access the API, contact us [here](https://www.predictionguard.com/getting-started) to get an enterprise access token.
+To access the API, contact us [here](https://predictionguard.com/get-started) to get an enterprise access token.
 You will need this access token to continue.
 
 ### Usage
@@ -47,7 +47,7 @@ Take a look at the `examples` directory for more examples.
 
 You can find the Prediction Guard API docs on the Prediction Guard website.
 
-[API Docs](https://docs.predictionguard.com/docs/getting-started/welcome)
+[API Docs](https://docs.predictionguard.com/home/getting-started/welcome)
 
 [API Reference](https://docs.predictionguard.com/api-reference/api-reference/check-api-health)
 
