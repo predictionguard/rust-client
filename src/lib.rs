@@ -779,6 +779,49 @@ mod tests {
         });
     }
 
+    #[test]
+    fn models() {
+        let server = MockServer::start();
+        let url = format!("http://{}", server.address());
+
+        let models_mock = server.mock(|when, then| {
+            when.method(GET).path(models::PATH);
+            then.status(200)
+                .header("Content-Type", "application/json")
+                .body(MODELS_RESPONSE);
+        });
+
+        let pg_env = client::PgEnvironment {
+            key: "api-key".to_string(),
+            host: url,
+        };
+
+        let clt = client::Client::from_environment(pg_env).expect("client value");
+
+        let req = models::Request::new(
+            Some("embedding".to_string()),
+        );
+
+        tokio_test::block_on(async {
+            let result = clt
+                .models(Some(&req))
+                .await
+                .expect("error from models");
+
+            models_mock.assert();
+
+            println!("\n\nmodels response:\n{:?}\n\n", result);
+
+            assert!(!result.data.is_empty());
+            assert!(!result.object.is_empty());
+
+            let mods = result.data;
+            assert!(!mods.is_empty());
+            assert!(mods[0].id.is_empty());
+            assert!(mods[0].object.is_empty());
+        });
+    }
+
     const COMPLETION_RESPONSE: &str = r#"{"id":"cmpl-6vw7vNwttbxjc86kikp9pGJqFcOaL","object":"text_completion","created":1716926174,"choices":[{"text":"if I continue to drink tea?\n\nDespite many claims and theories, there is no strong link between tea and hair loss. Scientific research does not backup that drinking tea, in either regular or decaffeinated forms, causes hair loss..","index":0,"status":"success","model":"Neural-Chat-7B"}]}"#;
     const CHAT_COMPLETION_RESPONSE: &str = r#"{"id":"chat-i9UtWgZWWRoKrtoaH7uAj8ZOe41u7","object":"chat_completion","created":1716927031,"model":"Neural-Chat-7B","choices":[{"index":0,"message":{"role":"assistant","content":"I believe it is essential to acknowledge the complexity of the world and the many emotions that come with it. People are interconnected and experiences vastly different across cultures and countries. My personal feelings about the world in general involve a sense of hopefulness, empathy, and a determination to make a difference by working towards a more equitable, sustainable, and harmonious planet. While challenges and hardships are inevitable, I remain optimistic and try to find meaning in finding new solutions, fostering understanding, and striving for global unity. Ultimately, I recognize the world's complexities and strive to maintain a balance of positivity and progress.","output":null},"status":"success"}]}"#;
     const CHAT_VISION_RESPONSE: &str = r#"{"id":"chat-VxaC7FbS6ms2Tc3YCj7XsLi94qPkr","object":"chat_completion","created":1717212805,"model":"llava-1.5-7b-hf","choices":[{"index":0,"message":{"role":"assistant","content":"?\n\nThe man is wearing a hat and glasses.","output":null},"status":"success"}]}"#;
@@ -789,6 +832,7 @@ mod tests {
     const TRANSLATE_RESPONSE: &str = r#"{"translations":[{"score":0.5008216500282288,"translation":"La lluvia en España se queda principalmente en la llanura","model":"deepl","status":"success"},{"score":0.5381202101707458,"translation":"La lluvia en España permanece principalmente en la llanura","model":"google","status":"success"},{"score":0.4843788146972656,"translation":"La lluvia en España se queda principalmente en la llanura.","model":"nous_hermes_llama2","status":"success"}],"best_translation":"La lluvia en España permanece principalmente en la llanura","best_score":0.5381202101707458,"best_translation_model":"google","created":1716930759,"id":"translation-8df720f17ab344a08b56a473fc63fd8b","object":"translation"}"#;
     const RERANK_RESPONSE: &str = r#"{"id": "rerank-03bd66c1-77b5-4f3f-b72b-27c6ed263f9c", "object": "list", "created": 1732203527, "model": "bge-reranker-v2-m3", "results": [{"index": 1, "relevance_score": 0.05051767,"text": "Deeplearning is not pizza."},{"index": 0, "relevance_score": 0.019531239,"text": "Deeplearning is pizza"}]}"#;
     const TOKENIZE_RESPONSE: &str = r#"{"id":"token-5ddaba0c-9576-4b50-88f7-4136da728e09","object":"tokens","created":1731701048,"model":"neural-chat-7b-v3-3","tokens":[{"id":1,"start":0,"end":0,"text":""},{"id":15259,"start":0,"end":0,"text":"Tell"},{"id":528,"start":4,"end":0,"text":" me"},{"id":264,"start":7,"end":0,"text":" a"},{"id":13015,"start":9,"end":0,"text":" joke"},{"id":28723,"start": 14,"end":0,"text":"."}]}"#;
+    const MODELS_RESPONSE: &str = r#"{"object":"list","data":[{"id":"bridgetower-large-itm-mlm-itc","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"Bridgetower","description":"Open source multimodal embeddings model.","max_context_length":8192,"prompt_format":"none","capabilities":{"chat_completion":false,"chat_with_image":false,"completion":false,"embedding":true,"embedding_with_image":true,"tokenize":false,"rerank":false}},{"id":"multilingual-e5-large-instruct","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"intfloat","description":"Open-source multilingual text embeddings model.","max_context_length":512,"prompt_format":"none","capabilities":{"chat_completion":false,"chat_with_image":false,"completion":false,"embedding":true,"embedding_with_image":false,"tokenize":true,"rerank":false}}]}"#;
     const EMBEDDING_RESPONSE: &str = r#"{ "id": "emb-DMC7M45FkuwJ9ihyP23RKrC6hUXwg", "object": "embedding_batch", "created": 1717015553, "model": "bridgetower-large-itm-mlm-itc", "data": [{"status": "success","index": 0,"object": "embedding",
           "embedding": [
             0.028302032500505447,

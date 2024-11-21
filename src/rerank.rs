@@ -33,7 +33,8 @@ impl Request {
 pub struct Results {
     pub index: i64,
     pub relevance_score: f64,
-    pub text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
 }
 
 /// Response type for the tokenize endpoint.
