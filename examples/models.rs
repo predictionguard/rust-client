@@ -8,10 +8,11 @@ use pg_client::{client, models};
 async fn main() {
     let clt = client::Client::new().expect("client value");
 
-    let result = clt
-        .retrieve_models()
-        .await
-        .expect("error from factuality");
+    let req = models::Request::new(
+        Some("chat-completion".to_string()),
+    );
 
-    println!("\n\nfactuality response:\n{:?}\n\n", result);
+    let result = clt.models(Some(&req)).await.expect("error from models");
+
+    println!("\n\nmodels response:\n{:?}\n\n", result);
 }

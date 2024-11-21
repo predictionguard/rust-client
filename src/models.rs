@@ -8,7 +8,7 @@ pub const PATH: &str = "/models";
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Request {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) capability: Option<String>,
+    pub capability: Option<String>,
 }
 
 impl Request {
@@ -17,8 +17,8 @@ impl Request {
     /// ## Arguments
     ///
     /// * `capability` - The capability to sort models by.
-    pub fn new(capability: String) -> Request {
-        Self { capability: Some(capability) }
+    pub fn new(capability: Option<String>) -> Request {
+        Self { capability }
     }
 }
 /// Represents the capabilities for a single model.
