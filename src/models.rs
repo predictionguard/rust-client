@@ -7,7 +7,8 @@ pub const PATH: &str = "/models";
 /// Request type for the factuality endpoint.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Request {
-    pub(crate) capability: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) capability: Option<String>,
 }
 
 impl Request {
@@ -17,13 +18,13 @@ impl Request {
     ///
     /// * `capability` - The capability to sort models by.
     pub fn new(capability: String) -> Request {
-        Self { capability }
+        Self { capability: Some(capability) }
     }
 }
 /// Represents the capabilities for a single model.
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
-pub struct Capabilities {
+pub struct ModelCapabilities {
     pub chat_completion: bool,
     pub chat_with_image: bool,
     pub completion: bool,
@@ -35,7 +36,7 @@ pub struct Capabilities {
 /// Represents a single model response.
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
-pub struct Data {
+pub struct ModelData {
     pub id: String,
     pub object: String,
     pub created: String,
@@ -43,7 +44,7 @@ pub struct Data {
     pub description: String,
     pub max_context_length: i64,
     pub prompt_format: String,
-    pub capabilities: Vec<Capabilities>,
+    pub capabilities: ModelCapabilities,
 }
 
 /// Response type for the models endpoint.
@@ -51,5 +52,5 @@ pub struct Data {
 #[serde(default)]
 pub struct Response {
     pub object: String,
-    pub data: Vec<Data>,
+    pub data: Vec<ModelData>,
 }

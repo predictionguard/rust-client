@@ -10,7 +10,7 @@ async fn main() {
     let clt = client::Client::new().expect("client value");
 
     // Load the list of models available for chat vision.
-    let models = clt.retrieve_chat_vision_models().await.expect("model list");
+    let models = clt.retrieve_model_list("chat-with-image".to_string()).await.expect("model list");
 
     assert!(!models.is_empty());
 

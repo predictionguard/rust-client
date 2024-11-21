@@ -48,12 +48,12 @@ impl Request {
         }
     }
 
-    /// Sets the trunctate parameter and the truncate direction on the request.
+    /// Sets the truncate parameter and the truncate direction on the request.
     ///
     /// ## Arguments
     ///
     /// * `truncate_direction` - The enum value of the direction to truncate the embeddings.
-    pub fn trunctate(mut self, direction: Direction) -> Self {
+    pub fn truncate(mut self, direction: Direction) -> Self {
         self.truncate = Some(true);
         self.truncate_direction = Some(direction);
         self

@@ -19,7 +19,7 @@ async fn main() {
     let clt = client::Client::new().expect("client value");
 
     // Load the list of models available for completion.
-    let models = clt.retrieve_embedding_models().await.expect("model list");
+    let models = clt.retrieve_model_list("embedding".to_string()).await.expect("model list");
 
     assert!(!models.is_empty());
 
@@ -40,7 +40,7 @@ async fn main() {
         Some("skyline with a flying horse".to_string()),
         img_str,
     )
-    .trunctate(Direction::Right);
+    .truncate(Direction::Right);
 
     let result_truncation = clt
         .embedding(&req_truncation)

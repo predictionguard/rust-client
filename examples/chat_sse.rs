@@ -13,7 +13,7 @@ async fn main() {
 
     // Load the list of models available for chat completion.
     let models = clt
-        .retrieve_chat_completion_models()
+        .retrieve_model_list("chat-completions".to_string())
         .await
         .expect("model list");
 
