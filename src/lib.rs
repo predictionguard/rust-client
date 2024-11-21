@@ -41,6 +41,7 @@ pub mod factuality;
 pub mod image;
 pub mod injection;
 pub mod pii;
+pub mod rerank;
 pub mod toxicity;
 pub mod translate;
 pub mod tokenize;
@@ -682,6 +683,58 @@ mod tests {
     }
 
     #[test]
+    fn rerank() {
+        let server = MockServer::start();
+        let url = format!("http://{}", server.address());
+
+        let rerank_mock = server.mock(|when, then| {
+            when.method(POST).path(rerank::PATH);
+            then.status(200)
+                .header("Content-Type", "application/json")
+                .body(RERANK_RESPONSE);
+        });
+
+        let pg_env = client::PgEnvironment {
+            key: "api-key".to_string(),
+            host: url,
+        };
+
+        let clt = client::Client::from_environment(pg_env).expect("client value");
+
+        let docs = vec![
+            "Deep Learning is pizza".to_string(),
+            "Deep Learning is not pizza".to_string(),
+        ];
+
+        let req = rerank::Request::new(
+            "bge-reranker-v2-m3".to_string(),
+            "What is Deep Learning?".to_string(),
+            docs,
+            true,
+        );
+
+        tokio_test::block_on(async {
+            let result = clt
+                .rerank(&req)
+                .await
+                .expect("error from tokenize");
+
+            rerank_mock.assert();
+
+            println!("\n\nrerank response:\n{:?}\n\n", result);
+
+            assert!(!result.id.is_empty());
+            assert!(!result.object.is_empty());
+            assert!(result.created > 0);
+
+            let results = result.results;
+            assert!(!results.is_empty());
+            assert!(results[0].index > 0);
+            assert!(results[0].relevance_score >= 0.0);
+        });
+    }
+
+    #[test]
     fn tokenize() {
         let server = MockServer::start();
         let url = format!("http://{}", server.address());
@@ -734,6 +787,7 @@ mod tests {
     const PII_RESPONSE: &str = r#"{ "id": "pii-sqq812J5VlXRxp6Fpu3PXkV33rOJnwTv", "object": "pii_check", "created": "1716928267", "checks": [{ "new_prompt": "My email is oyo@yukmt.fjw", "index": 0, "status": "success" }]}"#;
     const TOXICITY_RESPONSE: &str = r#"{"checks":[{"score":0.7072361707687378,"index":0,"status":"success"}],"created":1716928765,"id":"toxi-T9KOKkKxBBXEHVoDkzoC0uYNpTbvx","object":"toxicity_check"}"#;
     const TRANSLATE_RESPONSE: &str = r#"{"translations":[{"score":0.5008216500282288,"translation":"La lluvia en España se queda principalmente en la llanura","model":"deepl","status":"success"},{"score":0.5381202101707458,"translation":"La lluvia en España permanece principalmente en la llanura","model":"google","status":"success"},{"score":0.4843788146972656,"translation":"La lluvia en España se queda principalmente en la llanura.","model":"nous_hermes_llama2","status":"success"}],"best_translation":"La lluvia en España permanece principalmente en la llanura","best_score":0.5381202101707458,"best_translation_model":"google","created":1716930759,"id":"translation-8df720f17ab344a08b56a473fc63fd8b","object":"translation"}"#;
+    const RERANK_RESPONSE: &str = r#"{"id": "rerank-03bd66c1-77b5-4f3f-b72b-27c6ed263f9c", "object": "list", "created": 1732203527, "model": "bge-reranker-v2-m3", "results": [{"index": 1, "relevance_score": 0.05051767,"text": "Deeplearning is not pizza."},{"index": 0, "relevance_score": 0.019531239,"text": "Deeplearning is pizza"}]}"#;
     const TOKENIZE_RESPONSE: &str = r#"{"id":"token-5ddaba0c-9576-4b50-88f7-4136da728e09","object":"tokens","created":1731701048,"model":"neural-chat-7b-v3-3","tokens":[{"id":1,"start":0,"end":0,"text":""},{"id":15259,"start":0,"end":0,"text":"Tell"},{"id":528,"start":4,"end":0,"text":" me"},{"id":264,"start":7,"end":0,"text":" a"},{"id":13015,"start":9,"end":0,"text":" joke"},{"id":28723,"start": 14,"end":0,"text":"."}]}"#;
     const EMBEDDING_RESPONSE: &str = r#"{ "id": "emb-DMC7M45FkuwJ9ihyP23RKrC6hUXwg", "object": "embedding_batch", "created": 1717015553, "model": "bridgetower-large-itm-mlm-itc", "data": [{"status": "success","index": 0,"object": "embedding",
           "embedding": [

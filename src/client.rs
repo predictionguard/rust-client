@@ -2,7 +2,11 @@
 use std::{env, fmt, sync::Arc, time::Duration};
 
 use crate::built_info;
-use crate::{chat, completion, embedding, factuality, injection, pii, toxicity, translate, tokenize, models, Result};
+use crate::{
+    chat, completion, embedding, factuality,
+    injection, pii, rerank, toxicity, translate,
+    tokenize, models, Result
+};
 use dotenvy;
 use eventsource_client::Client as EventClient;
 use eventsource_client::SSE;
@@ -479,7 +483,7 @@ impl Client {
     /// Returns a vector of strings with the model names. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
     pub async fn retrieve_chat_completion_models(&self) -> Result<Vec<String>> {
-        let url = format!("{}{}", &self.inner.server, chat::PATH);
+        let url = format!("{}{}", &self.inner.server, chat::PATH_CHAT_MODELS);
 
         let result = self
             .inner
@@ -552,6 +556,38 @@ impl Client {
         let chat_vision = result.json::<Vec<String>>().await?;
 
         Ok(chat_vision)
+    }
+
+    /// Calls the rerank endpoint.
+    ///
+    /// ## Arguments:
+    ///
+    /// * `req` - An instance of [`rerank::Request`]
+    ///
+    /// Returns an instance of [`rerank::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
+    pub async fn rerank(
+        &self,
+        req: &rerank::Request,
+    ) -> Result<rerank::Response> {
+        let url = format!("{}{}", &self.inner.server, rerank::PATH);
+
+        let result = self
+            .inner
+            .http_client
+            .post(url)
+            .headers(self.inner.headers.clone())
+            .json(req)
+            .send()
+            .await?;
+
+        if result.status() != StatusCode::OK {
+            return Err(retrieve_error(result).await);
+        }
+
+        let rerank_response = result.json::<rerank::Response>().await?;
+
+        Ok(rerank_response)
     }
 
     /// Calls the factuality check endpoint.
