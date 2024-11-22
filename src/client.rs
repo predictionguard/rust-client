@@ -149,6 +149,14 @@ impl Client {
         Ok(txt)
     }
 
+    /// Retrieves the list of models available for a set capability
+    ///
+    /// ## Arguments:
+    ///
+    /// * `capability` - The capability of models to sort by.
+    ///
+    /// Returns a vector of strings with the model names. A 200 (Ok) status code is expected from the Prediction Guard api.
+    /// Any other status code is considered an error.
     pub async fn retrieve_model_list(&self, capability: String) -> Result<Vec<String>> {
         let url = format!(
             "{}{}/{}",
