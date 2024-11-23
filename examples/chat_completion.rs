@@ -10,13 +10,13 @@ async fn main() {
 
     // Load the list of models available for chat completion.
     let models = clt
-        .retrieve_chat_completion_models()
+        .retrieve_model_list("chat-completion".to_string())
         .await
         .expect("model list");
 
     assert!(!models.is_empty());
 
-    // use last moddel returned in the list.
+    // use last model returned in the list.
     let req = chat::Request::<chat::Message>::new(models[models.len() - 1].to_string())
         .add_message(
             chat::Roles::User,

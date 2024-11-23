@@ -9,7 +9,7 @@ async fn main() {
     let clt = client::Client::new().expect("client value");
 
     // Load the list of models available for completion.
-    let models = clt.retrieve_completion_models().await.expect("model list");
+    let models = clt.retrieve_model_list("completion".to_string()).await.expect("model list");
 
     assert!(!models.is_empty());
 

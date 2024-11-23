@@ -2,7 +2,11 @@
 use std::{env, fmt, sync::Arc, time::Duration};
 
 use crate::built_info;
-use crate::{chat, completion, embedding, factuality, injection, pii, toxicity, translate, Result};
+use crate::{
+    chat, completion, embedding, factuality,
+    injection, pii, rerank, toxicity, translate,
+    tokenize, models, Result
+};
 use dotenvy;
 use eventsource_client::Client as EventClient;
 use eventsource_client::SSE;
@@ -145,6 +149,45 @@ impl Client {
         Ok(txt)
     }
 
+    /// Retrieves the list of models available for a set capability
+    ///
+    /// ## Arguments:
+    ///
+    /// * `capability` - The capability of models to sort by.
+    ///
+    /// Returns a vector of strings with the model names. A 200 (Ok) status code is expected from the Prediction Guard api.
+    /// Any other status code is considered an error.
+    pub async fn retrieve_model_list(&self, capability: String) -> Result<Vec<String>> {
+        let url = format!(
+            "{}{}/{}",
+            &self.inner.server,
+            models::PATH,
+            capability
+        );
+
+        let result = self
+            .inner
+            .http_client
+            .get(url)
+            .headers(self.inner.headers.clone())
+            .send()
+            .await?;
+
+        if result.status() != StatusCode::OK {
+            return Err(retrieve_error(result).await);
+        }
+
+        let response_body: models::Response = result.json().await?;
+
+        let retrieve_models_response: Vec<String> = response_body
+            .data
+            .into_iter()
+            .map(|model| model.id)
+            .collect();
+
+        Ok(retrieve_models_response)
+    }
+
     /// Calls the embedding endpoint.
     ///
     /// ## Arguments:
@@ -170,30 +213,6 @@ impl Client {
         }
 
         let embed_response = result.json::<embedding::Response>().await?;
-
-        Ok(embed_response)
-    }
-
-    /// Retrieves the list of models available for the embeddings endpoint.
-    ///
-    /// Returns a vector of strings with the model names. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
-    /// is considered an error.
-    pub async fn retrieve_embedding_models(&self) -> Result<Vec<String>> {
-        let url = format!("{}{}", &self.inner.server, embedding::PATH);
-
-        let result = self
-            .inner
-            .http_client
-            .get(url)
-            .headers(self.inner.headers.clone())
-            .send()
-            .await?;
-
-        if result.status() != StatusCode::OK {
-            return Err(retrieve_error(result).await);
-        }
-
-        let embed_response = result.json::<Vec<String>>().await?;
 
         Ok(embed_response)
     }
@@ -226,30 +245,6 @@ impl Client {
         }
 
         let comp_response = result.json::<completion::Response>().await?;
-
-        Ok(comp_response)
-    }
-
-    /// Retrieves the list of models available for the completion endpoint.
-    ///
-    /// Returns a vector of strings with the model names. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
-    /// is considered an error.
-    pub async fn retrieve_completion_models(&self) -> Result<Vec<String>> {
-        let url = format!("{}{}", &self.inner.server, completion::PATH);
-
-        let result = self
-            .inner
-            .http_client
-            .get(url)
-            .headers(self.inner.headers.clone())
-            .send()
-            .await?;
-
-        if result.status() != StatusCode::OK {
-            return Err(retrieve_error(result).await);
-        }
-
-        let comp_response = result.json::<Vec<String>>().await?;
 
         Ok(comp_response)
     }
@@ -474,30 +469,6 @@ impl Client {
         Ok(None)
     }
 
-    /// Retrieves the list of models available for the chat completion endpoint.
-    ///
-    /// Returns a vector of strings with the model names. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
-    /// is considered an error.
-    pub async fn retrieve_chat_completion_models(&self) -> Result<Vec<String>> {
-        let url = format!("{}{}", &self.inner.server, chat::PATH);
-
-        let result = self
-            .inner
-            .http_client
-            .get(url)
-            .headers(self.inner.headers.clone())
-            .send()
-            .await?;
-
-        if result.status() != StatusCode::OK {
-            return Err(retrieve_error(result).await);
-        }
-
-        let chat_response = result.json::<Vec<String>>().await?;
-
-        Ok(chat_response)
-    }
-
     /// Calls the generate chat completion endpoint for chat vision.
     ///
     /// ## Arguments:
@@ -530,18 +501,26 @@ impl Client {
         Ok(chat_response)
     }
 
-    /// Retrieves the list of models available for the chat vision endpoint.
+    /// Calls the rerank endpoint.
     ///
-    /// Returns a vector of strings with the model names. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// ## Arguments:
+    ///
+    /// * `req` - An instance of [`rerank::Request`]
+    ///
+    /// Returns an instance of [`rerank::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
-    pub async fn retrieve_chat_vision_models(&self) -> Result<Vec<String>> {
-        let url = format!("{}{}", &self.inner.server, chat::PATH_VISION_MODELS);
+    pub async fn rerank(
+        &self,
+        req: &rerank::Request,
+    ) -> Result<rerank::Response> {
+        let url = format!("{}{}", &self.inner.server, rerank::PATH);
 
         let result = self
             .inner
             .http_client
-            .get(url)
+            .post(url)
             .headers(self.inner.headers.clone())
+            .json(req)
             .send()
             .await?;
 
@@ -549,9 +528,9 @@ impl Client {
             return Err(retrieve_error(result).await);
         }
 
-        let chat_vision = result.json::<Vec<String>>().await?;
+        let rerank_response = result.json::<rerank::Response>().await?;
 
-        Ok(chat_vision)
+        Ok(rerank_response)
     }
 
     /// Calls the factuality check endpoint.
@@ -700,6 +679,74 @@ impl Client {
         let toxicity_response = result.json::<toxicity::Response>().await?;
 
         Ok(toxicity_response)
+    }
+
+    /// Calls the tokenize endpoint.
+    ///
+    /// ## Arguments:
+    ///
+    /// * `req` - An instance of [`tokenize::Request`]
+    ///
+    /// Returns an instance of [`tokenize::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
+    pub async fn tokenize(
+        &self,
+        req: &tokenize::Request,
+    ) -> Result<tokenize::Response> {
+        let url = format!("{}{}", &self.inner.server, tokenize::PATH);
+
+        let result = self
+            .inner
+            .http_client
+            .post(url)
+            .headers(self.inner.headers.clone())
+            .json(req)
+            .send()
+            .await?;
+
+        if result.status() != StatusCode::OK {
+            return Err(retrieve_error(result).await);
+        }
+
+        let token_response = result.json::<tokenize::Response>().await?;
+
+        Ok(token_response)
+    }
+
+
+    /// Retrieves the list of models available.
+    ///
+    /// Returns a vector with the model metadata. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
+    pub async fn models(
+        &self,
+        req: Option<&models::Request>
+    ) -> Result<models::Response> {
+        let mut url = format!("{}{}", &self.inner.server, models::PATH);
+
+        // If `req` is Some, append it to the URL
+        if let Some(request) = req {
+            if let Some(capability) = &request.capability {
+                url.push('/');
+                url.push_str(capability);
+            }
+        }
+
+        let result = self
+            .inner
+            .http_client
+            .get(url)
+            .headers(self.inner.headers.clone())
+            .send()
+            .await?;
+
+        if result.status() != StatusCode::OK {
+            return Err(retrieve_error(result).await);
+        }
+
+        let model_response = result.json::<models::Response>().await?;
+
+        Ok(model_response)
     }
 }
 

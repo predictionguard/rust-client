@@ -41,8 +41,11 @@ pub mod factuality;
 pub mod image;
 pub mod injection;
 pub mod pii;
+pub mod rerank;
 pub mod toxicity;
 pub mod translate;
+pub mod tokenize;
+pub mod models;
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -294,7 +297,7 @@ mod tests {
 
         let clt = client::Client::from_environment(pg_env).expect("client value");
 
-        let req = chat::Request::<chat::Message>::new("Neural-Chat-7B".to_string())
+        let req = chat::Request::<chat::Message>::new("neural-chat-7b-v3-3".to_string())
             .max_tokens(1000)
             .temperature(1.1)
             .add_message(chat::Roles::User, "Will I lose my hair?".to_string());
@@ -679,6 +682,146 @@ mod tests {
         });
     }
 
+    #[test]
+    fn rerank() {
+        let server = MockServer::start();
+        let url = format!("http://{}", server.address());
+
+        let rerank_mock = server.mock(|when, then| {
+            when.method(POST).path(rerank::PATH);
+            then.status(200)
+                .header("Content-Type", "application/json")
+                .body(RERANK_RESPONSE);
+        });
+
+        let pg_env = client::PgEnvironment {
+            key: "api-key".to_string(),
+            host: url,
+        };
+
+        let clt = client::Client::from_environment(pg_env).expect("client value");
+
+        let docs = vec![
+            "Deep Learning is pizza".to_string(),
+            "Deep Learning is not pizza".to_string(),
+        ];
+
+        let req = rerank::Request::new(
+            "bge-reranker-v2-m3".to_string(),
+            "What is Deep Learning?".to_string(),
+            docs,
+            true,
+        );
+
+        tokio_test::block_on(async {
+            let result = clt
+                .rerank(&req)
+                .await
+                .expect("error from tokenize");
+
+            rerank_mock.assert();
+
+            println!("\n\nrerank response:\n{:?}\n\n", result);
+
+            assert!(!result.id.is_empty());
+            assert!(!result.object.is_empty());
+            assert!(result.created > 0);
+
+            let results = result.results;
+            assert!(!results.is_empty());
+            assert!(results[0].index > 0);
+            assert!(results[0].relevance_score >= 0.0);
+        });
+    }
+
+    #[test]
+    fn tokenize() {
+        let server = MockServer::start();
+        let url = format!("http://{}", server.address());
+
+        let tokenize_mock = server.mock(|when, then| {
+            when.method(POST).path(tokenize::PATH);
+            then.status(200)
+                .header("Content-Type", "application/json")
+                .body(TOKENIZE_RESPONSE);
+        });
+
+        let pg_env = client::PgEnvironment {
+            key: "api-key".to_string(),
+            host: url,
+        };
+
+        let clt = client::Client::from_environment(pg_env).expect("client value");
+
+        let req = tokenize::Request::new(
+            "neural-chat-7b-v3-3".to_string(),
+            "Tell me a joke.".to_string(),
+        );
+
+        tokio_test::block_on(async {
+            let result = clt
+                .tokenize(&req)
+                .await
+                .expect("error from tokenize");
+
+            tokenize_mock.assert();
+
+            println!("\n\ntokenize response:\n{:?}\n\n", result);
+
+            assert!(!result.id.is_empty());
+            assert!(!result.object.is_empty());
+            assert!(result.created > 0);
+
+            let tokens = result.tokens;
+            assert!(!tokens.is_empty());
+            assert!(tokens[0].id > 0);
+            assert!(tokens[0].start >= 0);
+        });
+    }
+
+    #[test]
+    fn models() {
+        let server = MockServer::start();
+        let url = format!("http://{}", server.address());
+
+        let models_mock = server.mock(|when, then| {
+            when.method(GET).path(models::PATH);
+            then.status(200)
+                .header("Content-Type", "application/json")
+                .body(MODELS_RESPONSE);
+        });
+
+        let pg_env = client::PgEnvironment {
+            key: "api-key".to_string(),
+            host: url,
+        };
+
+        let clt = client::Client::from_environment(pg_env).expect("client value");
+
+        let req = models::Request::new(
+            None,
+        );
+
+        tokio_test::block_on(async {
+            let result = clt
+                .models(Some(&req))
+                .await
+                .expect("error from models");
+
+            models_mock.assert();
+
+            println!("\n\nmodels response:\n{:?}\n\n", result);
+
+            assert!(!result.data.is_empty());
+            assert!(!result.object.is_empty());
+
+            let mods = result.data;
+            assert!(!mods.is_empty());
+            assert!(!mods[0].id.is_empty());
+            assert!(!mods[0].object.is_empty());
+        });
+    }
+
     const COMPLETION_RESPONSE: &str = r#"{"id":"cmpl-6vw7vNwttbxjc86kikp9pGJqFcOaL","object":"text_completion","created":1716926174,"choices":[{"text":"if I continue to drink tea?\n\nDespite many claims and theories, there is no strong link between tea and hair loss. Scientific research does not backup that drinking tea, in either regular or decaffeinated forms, causes hair loss..","index":0,"status":"success","model":"Neural-Chat-7B"}]}"#;
     const CHAT_COMPLETION_RESPONSE: &str = r#"{"id":"chat-i9UtWgZWWRoKrtoaH7uAj8ZOe41u7","object":"chat_completion","created":1716927031,"model":"Neural-Chat-7B","choices":[{"index":0,"message":{"role":"assistant","content":"I believe it is essential to acknowledge the complexity of the world and the many emotions that come with it. People are interconnected and experiences vastly different across cultures and countries. My personal feelings about the world in general involve a sense of hopefulness, empathy, and a determination to make a difference by working towards a more equitable, sustainable, and harmonious planet. While challenges and hardships are inevitable, I remain optimistic and try to find meaning in finding new solutions, fostering understanding, and striving for global unity. Ultimately, I recognize the world's complexities and strive to maintain a balance of positivity and progress.","output":null},"status":"success"}]}"#;
     const CHAT_VISION_RESPONSE: &str = r#"{"id":"chat-VxaC7FbS6ms2Tc3YCj7XsLi94qPkr","object":"chat_completion","created":1717212805,"model":"llava-1.5-7b-hf","choices":[{"index":0,"message":{"role":"assistant","content":"?\n\nThe man is wearing a hat and glasses.","output":null},"status":"success"}]}"#;
@@ -687,6 +830,9 @@ mod tests {
     const PII_RESPONSE: &str = r#"{ "id": "pii-sqq812J5VlXRxp6Fpu3PXkV33rOJnwTv", "object": "pii_check", "created": "1716928267", "checks": [{ "new_prompt": "My email is oyo@yukmt.fjw", "index": 0, "status": "success" }]}"#;
     const TOXICITY_RESPONSE: &str = r#"{"checks":[{"score":0.7072361707687378,"index":0,"status":"success"}],"created":1716928765,"id":"toxi-T9KOKkKxBBXEHVoDkzoC0uYNpTbvx","object":"toxicity_check"}"#;
     const TRANSLATE_RESPONSE: &str = r#"{"translations":[{"score":0.5008216500282288,"translation":"La lluvia en España se queda principalmente en la llanura","model":"deepl","status":"success"},{"score":0.5381202101707458,"translation":"La lluvia en España permanece principalmente en la llanura","model":"google","status":"success"},{"score":0.4843788146972656,"translation":"La lluvia en España se queda principalmente en la llanura.","model":"nous_hermes_llama2","status":"success"}],"best_translation":"La lluvia en España permanece principalmente en la llanura","best_score":0.5381202101707458,"best_translation_model":"google","created":1716930759,"id":"translation-8df720f17ab344a08b56a473fc63fd8b","object":"translation"}"#;
+    const RERANK_RESPONSE: &str = r#"{"id": "rerank-03bd66c1-77b5-4f3f-b72b-27c6ed263f9c", "object": "list", "created": 1732203527, "model": "bge-reranker-v2-m3", "results": [{"index": 1, "relevance_score": 0.05051767,"text": "Deeplearning is not pizza."},{"index": 0, "relevance_score": 0.019531239,"text": "Deeplearning is pizza"}]}"#;
+    const TOKENIZE_RESPONSE: &str = r#"{"id":"token-5ddaba0c-9576-4b50-88f7-4136da728e09","object":"tokens","created":1731701048,"model":"neural-chat-7b-v3-3","tokens":[{"id":1,"start":0,"end":0,"text":""},{"id":15259,"start":0,"end":0,"text":"Tell"},{"id":528,"start":4,"end":0,"text":" me"},{"id":264,"start":7,"end":0,"text":" a"},{"id":13015,"start":9,"end":0,"text":" joke"},{"id":28723,"start": 14,"end":0,"text":"."}]}"#;
+    const MODELS_RESPONSE: &str = r#"{"object":"list","data":[{"id":"bge-reranker-v2-m3","object":"model","created":"2024-11-19T00:00:00Z","owned_by":"Beijing Academy of Artificial Intelligence","description":"Open-source multilingual reranker model.","max_context_length":512,"prompt_format":"none","capabilities":{"chat_completion":false,"chat_with_image":false,"completion":false,"embedding":false,"embedding_with_image":false,"tokenize":true,"rerank":true}},{"id":"bridgetower-large-itm-mlm-itc","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"Bridgetower","description":"Open source multimodal embeddings model.","max_context_length":8192,"prompt_format":"none","capabilities":{"chat_completion":false,"chat_with_image":false,"completion":false,"embedding":true,"embedding_with_image":true,"tokenize":false,"rerank":false}},{"id":"deepseek-coder-6.7b-instruct","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"DeepSeek","description":"Deepseek Coder is a coder model trained on 2 trillion tokens.","max_context_length":8192,"prompt_format":"deepseek","capabilities":{"chat_completion":true,"chat_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"rerank":false}},{"id":"Hermes-2-Pro-Llama-3-8B","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"NousResearch","description":"Hermes 2 Pro is a generalist language model based on Meta Llama 3 8B.","max_context_length":8192,"prompt_format":"chatML","capabilities":{"chat_completion":true,"chat_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"rerank":false}},{"id":"Hermes-2-Pro-Mistral-7B","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"NousResearch","description":"Hermes 2 Pro is a generalist language model based on Mistral 7B.","max_context_length":8192,"prompt_format":"chatML","capabilities":{"chat_completion":true,"chat_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"rerank":false}},{"id":"Hermes-3-Llama-3.1-70B","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"NousResearch","description":"Hermes 3 is a generalist language model based on Llama 3.1 70B.","max_context_length":20480,"prompt_format":"chatML","capabilities":{"chat_completion":true,"chat_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"rerank":false}},{"id":"Hermes-3-Llama-3.1-8B","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"Nous Research","description":"Hermes 3 is a generalist language model based on Llama 3.1 8B.","max_context_length":20480,"prompt_format":"chatML","capabilities":{"chat_completion":true,"chat_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"rerank":false}},{"id":"llava-1.5-7b-hf","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"llava hugging face","description":"Open-source multimodal chatbot trained by fine-tuning LLaMa/Vicuna.","max_context_length":8192,"prompt_format":"llava","capabilities":{"chat_completion":true,"chat_with_image":true,"completion":false,"embedding":false,"embedding_with_image":false,"tokenize":false,"rerank":false}},{"id":"llava-v1.6-mistral-7b-hf","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"llava hugging face","description":"Open-source multimodal chatbot trained by fine-tuning LLaMa/Vicuna.","max_context_length":8192,"prompt_format":"llava_mistral_instruct","capabilities":{"chat_completion":true,"chat_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"rerank":false}},{"id":"multilingual-e5-large-instruct","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"intfloat","description":"Open-source multilingual text embeddings model.","max_context_length":512,"prompt_format":"none","capabilities":{"chat_completion":false,"chat_with_image":false,"completion":false,"embedding":true,"embedding_with_image":false,"tokenize":true,"rerank":false}},{"id":"neural-chat-7b-v3-3","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"Intel","description":"Neural Chat is a fine-tune of Mistral 7B","max_context_length":8192,"prompt_format":"neural","capabilities":{"chat_completion":true,"chat_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"rerank":false}},{"id":"Nous-Hermes-Llama2-13b","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"NousResearch","description":"Nous-Hermes-Llama2-13b is a state-of-the-art language model fine-tuned on over 300,000 instructions.","max_context_length":8192,"prompt_format":"none","capabilities":{"chat_completion":false,"chat_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"rerank":false}}]}"#;
     const EMBEDDING_RESPONSE: &str = r#"{ "id": "emb-DMC7M45FkuwJ9ihyP23RKrC6hUXwg", "object": "embedding_batch", "created": 1717015553, "model": "bridgetower-large-itm-mlm-itc", "data": [{"status": "success","index": 0,"object": "embedding",
           "embedding": [
             0.028302032500505447,

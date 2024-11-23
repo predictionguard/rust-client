@@ -1,12 +1,10 @@
 //! Data types that are used for the chat endpoints, including chat completions, chat vision
 //! and chat events.
 use serde::{self, Deserialize, Serialize};
-
 use crate::pii;
 
 /// Path to the completions chat endpoint.
 pub const PATH: &str = "/chat/completions";
-pub const PATH_VISION_MODELS: &str = "/chat/completions/vision";
 
 const IMAGE_URL_TYPE: &str = "image_url";
 const TEXT_TYPE: &str = "text";

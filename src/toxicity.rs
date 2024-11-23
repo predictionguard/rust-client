@@ -1,4 +1,4 @@
-//! Data types for the tocicity endpoint.
+//! Data types for the toxicity endpoint.
 use serde::{Deserialize, Serialize};
 
 /// Path to the toxicity endpoint.
