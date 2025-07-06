@@ -1,4 +1,6 @@
 //! Data types that are used for the completion endpoints.
+
+use std::collections::HashMap;
 use serde::{self, Deserialize, Serialize};
 
 use crate::pii;
@@ -26,9 +28,22 @@ pub struct RequestOutput {
 pub struct Request {
     pub(crate) model: String,
     pub(crate) prompt: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) frequency_penalty: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) logit_bias: Option<HashMap<i64, i64>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) max_tokens: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) presence_penalty: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) stop: Option<Vec<String>>,
+    pub(crate) stream: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) temperature: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) top_p: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) top_k: Option<i64>,
     pub(crate) input: Option<RequestInput>,
     pub(crate) output: Option<RequestOutput>,
@@ -45,8 +60,29 @@ impl Request {
         Self {
             model,
             prompt,
+            stream: false,
             ..Default::default()
         }
+    }
+
+    /// Sets the frequency penalty for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `freq` - A value between -2.0 and 2.0, with positive values increasingly penalizing new tokens based on their frequency so far in order to decrease further occurrences.
+    pub fn frequency_penalty(mut self, freq: f64) -> Request {
+        self.frequency_penalty = Some(freq);
+        self
+    }
+
+    /// Sets the logit bias for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `logit` - Modifies the likelihood of specified tokens appearing in a response.
+    pub fn logit_bias(mut self, logit: HashMap<i64, i64>) -> Request {
+        self.logit_bias = Some(logit);
+        self
     }
 
     /// Sets the max tokens for the request.
@@ -56,6 +92,26 @@ impl Request {
     /// * `max` - The maximum number of tokens to be returned in the response.
     pub fn max_tokens(mut self, max: i64) -> Request {
         self.max_tokens = Some(max);
+        self
+    }
+
+    /// Sets the presence penalty for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `pres` - A value between -2.0 and 2.0, with positive values causing a flat reduction of new tokens based on their existing presence so far in order to decrease further occurrences.
+    pub fn presence_penalty(mut self, pres: f64) -> Request {
+        self.presence_penalty = Some(pres);
+        self
+    }
+
+    /// Sets the stop token for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `stop` - The token or tokens to stop generation.
+    pub fn stop<S: Into<Vec<String>>>(mut self, stop: S) -> Request {
+        self.stop = Some(stop.into());
         self
     }
 
@@ -73,9 +129,9 @@ impl Request {
     ///
     /// ## Arguments
     ///
-    /// * `top` - The Top p setting for the request. Used to control randomness.
-    pub fn top_p(mut self, top: f64) -> Request {
-        self.top_p = Some(top);
+    /// * `top_p` - The Top p setting for the request. Used to control randomness.
+    pub fn top_p(mut self, top_p: f64) -> Request {
+        self.top_p = Some(top_p);
         self
     }
 
@@ -158,7 +214,7 @@ pub struct Choice {
     pub index: i64,
 }
 
-/// Completion response for the base completetion endpoint.
+/// Completion response for the base completion endpoint.
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Response {
@@ -167,4 +223,26 @@ pub struct Response {
     pub model: String,
     pub created: i64,
     pub choices: Vec<Choice>,
+}
+
+/// Represents the choices in a completions events response.
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[serde(default)]
+pub struct ChoiceEvents {
+    pub text: String,
+    pub index: i64,
+    pub finish_reason: Option<String>,
+    pub stop_reason: Option<String>,
+}
+
+/// Completion response returned from the completions events endpoint.
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[serde(default)]
+pub struct ResponseEvents {
+    pub id: String,
+    pub object: String,
+    pub created: i64,
+    pub model: String,
+    pub choices: Vec<ChoiceEvents>,
+    pub error: Option<String>,
 }

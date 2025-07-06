@@ -13,17 +13,27 @@ pub enum Direction {
     Left,
 }
 
-/// Input data type to contain text and/or a base64 encoded image.
+/// Input data type to contain all supported input forms
+#[derive(Serialize, Clone, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum Input {
+    String(String),
+    StringVec(Vec<String>),
+    IntVec(Vec<i32>),
+    IntVecVec(Vec<Vec<i32>>),
+}
+
+/// ImageInput data type to contain text and/or a base64 encoded image.
 #[derive(Serialize, Clone, Default, Deserialize, Debug)]
-pub struct Input {
+pub struct ImageInput {
     pub text: Option<String>,
     pub image: Option<String>,
 }
 
 /// Request data type used for the embedding endpoint.
-#[derive(Serialize, Clone, Default, Deserialize, Debug)]
+#[derive(Serialize, Clone, Deserialize, Debug)]
 pub struct Request {
-    pub(crate) input: Vec<Input>,
+    pub(crate) input: Input,
     pub(crate) model: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) truncate: Option<bool>,

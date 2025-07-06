@@ -1,11 +1,14 @@
 [package]
 name = "prediction-guard"
-version = "0.14.0"
-edition = "2021"
+version = "0.15.0"
+edition = "2024"
 license = "Apache-2.0"
-authors = ["Ed Gonzalez <ed.gonzalez@predictionguard.com>"]
+authors = [
+    "Ed Gonzalez <ed.gonzalez@predictionguard.com>",
+    "Jacob Mansdorfer <jacob@predictionguard.com>"
+]
 description = "SDK for the Prediction Guard API"
-homepage = "https://docs.predictionguard.com/docs/getting-started/welcome"
+homepage = "https://docs.predictionguard.com/home/getting-started/welcome"
 repository = "https://github.com/predictionguard/rust-client"
 readme = "README.md"
 documentation = "https://docs.rs/prediction-guard/latest/"
@@ -13,17 +16,16 @@ categories = ["api-bindings"]
 keywords = ["prediction", "guard"]
 
 [build-dependencies]
-built = "0.7"
+built = "0.8"
 
 [dependencies]
-eventsource-client = "0.12"
-reqwest = { version = "0.12", features = ["json"] }
+eventsource-client = "0.15"
+reqwest = { version = "0.12", features = ["json", "multipart"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["std"] }
 futures = "0.3"
 dotenvy = "0.15"
 base64 = "0.22.1"
-async-trait = "0.1"
 log = "0.4.22"
 tokio = "1.40"
 

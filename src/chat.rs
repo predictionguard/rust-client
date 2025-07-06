@@ -1,6 +1,9 @@
 //! Data types that are used for the chat endpoints, including chat completions, chat vision
 //! and chat events.
+
+use std::collections::HashMap;
 use serde::{self, Deserialize, Serialize};
+use serde_json::Value;
 use crate::pii;
 
 /// Path to the completions chat endpoint.
@@ -47,22 +50,107 @@ pub struct MessageVision {
     content: Vec<Content>,
 }
 
+#[derive(Serialize, Default, Deserialize, Debug)]
+pub struct Tools {
+    #[serde(rename = "type")]
+    content_type: Option<String>,
+    function: Option<ToolFunction>,
+}
+
+#[derive(Serialize, Default, Deserialize, Debug)]
+pub struct ToolFunction {
+    name: Option<String>,
+    description: Option<String>,
+    parameters: Option<HashMap<String, Value>>,
+    strict: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ToolChoice {
+    String(String),
+    Structured(ToolChoices),
+}
+
+#[derive(Serialize, Default, Deserialize, Debug)]
+pub struct ToolChoices {
+    #[serde(rename = "type")]
+    content_type: Option<String>,
+    function: Option<ToolChoiceFunction>,
+}
+
+#[derive(Serialize, Default, Deserialize, Debug)]
+pub struct ToolChoiceFunction {
+    name: Option<String>,
+}
+
+impl ToolChoice {
+    pub fn auto() -> Self {
+        ToolChoice::String("auto".to_string())
+    }
+
+    pub fn none() -> Self {
+        ToolChoice::String("none".to_string())
+    }
+
+    pub fn function(name: impl Into<String>) -> Self {
+        ToolChoice::Structured(ToolChoices {
+            content_type: Some("function".to_string()),
+            function: Some(ToolChoiceFunction {
+                name: Some(name.into()),
+            }),
+        })
+    }
+}
+
+impl From<String> for ToolChoice {
+    fn from(s: String) -> Self {
+        ToolChoice::String(s)
+    }
+}
+
+impl From<&str> for ToolChoice {
+    fn from(s: &str) -> Self {
+        ToolChoice::String(s.to_string())
+    }
+}
+
+impl From<ToolChoices> for ToolChoice {
+    fn from(tc: ToolChoices) -> Self {
+        ToolChoice::Structured(tc)
+    }
+}
+
 /// Used to send a request for chat.
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Request<T> {
     pub(crate) model: String,
-    messages: Vec<T>,
-    max_tokens: i64,
-    temperature: f64,
+    pub(crate) messages: Vec<T>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    top_p: Option<f64>,
+    pub(crate) frequency_penalty: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    top_k: Option<i64>,
+    pub(crate) logit_bias: Option<HashMap<i64, i64>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    input: Option<RequestInput>,
+    pub(crate) max_completion_tokens: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) output: Option<RequestOutput>,
+    pub(crate) parallel_tool_calls: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) presence_penalty: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) stop: Option<Vec<String>>,
     pub(crate) stream: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) tool_choice: Option<ToolChoice>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) tools: Option<Vec<Tools>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) temperature: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) top_p: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) top_k: Option<i64>,
+    pub(crate) input: Option<RequestInput>,
+    pub(crate) output: Option<RequestOutput>,
 }
 
 impl Request<MessageVision> {
@@ -129,8 +217,15 @@ impl<T> Request<T> {
         Self {
             model,
             messages: Vec::new(),
-            max_tokens: 100,
-            temperature: 0.0,
+            frequency_penalty: None,
+            logit_bias: None,
+            max_completion_tokens: None,
+            parallel_tool_calls: None,
+            presence_penalty: None,
+            stop: None,
+            tool_choice: None,
+            tools: None,
+            temperature: None,
             top_p: None,
             top_k: None,
             input: None,
@@ -161,13 +256,74 @@ impl<T> Request<T> {
         self
     }
 
+    /// Sets the frequency penalty for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `freq` - A value between -2.0 and 2.0, with positive values increasingly penalizing new tokens based on their frequency so far in order to decrease further occurrences.
+    pub fn frequency_penalty(mut self, freq: f64) -> Request<T> {
+        self.frequency_penalty = Some(freq);
+        self
+    }
+
+    /// Sets the logit bias for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `logit` - Modifies the likelihood of specified tokens appearing in a response.
+    pub fn logit_bias(mut self, logit: HashMap<i64, i64>) -> Request<T> {
+        self.logit_bias = Some(logit);
+        self
+    }
+
     /// Sets the max tokens for the request.
     ///
     /// ## Arguments
     ///
     /// * `max` - The maximum number of tokens to be returned in the response.
+    pub fn max_completion_tokens(mut self, max: i64) -> Request<T> {
+        self.max_completion_tokens = Some(max);
+        self
+    }
+
+    /// Sets the max tokens for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `max` - The maximum number of tokens to be returned in the response.
+    #[deprecated(since = "0.15.0")]
     pub fn max_tokens(mut self, max: i64) -> Request<T> {
-        self.max_tokens = max;
+        self.max_completion_tokens = Some(max);
+        self
+    }
+    
+    /// Sets the parallel tool calls for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `para` - A value between -2.0 and 2.0, with positive values causing a flat reduction of new tokens based on their existing presence so far in order to decrease further occurrences.
+    pub fn parallel_tool_calls(mut self, para: bool) -> Request<T> {
+        self.parallel_tool_calls = Some(para);
+        self
+    }
+
+    /// Sets the presence penalty for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `pres` - A value between -2.0 and 2.0, with positive values causing a flat reduction of new tokens based on their existing presence so far in order to decrease further occurrences.
+    pub fn presence_penalty(mut self, pres: f64) -> Request<T> {
+        self.presence_penalty = Some(pres);
+        self
+    }
+
+    /// Sets the stop token for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `stop` - The token or tokens to stop generation.
+    pub fn stop<S: Into<Vec<String>>>(mut self, stop: S) -> Request<T> {
+        self.stop = Some(stop.into());
         self
     }
 
@@ -177,7 +333,54 @@ impl<T> Request<T> {
     ///
     /// * `temp` - The temperature setting for the request. Used to control randomness.
     pub fn temperature(mut self, temp: f64) -> Request<T> {
-        self.temperature = temp;
+        self.temperature = Some(temp);
+        self
+    }
+
+    /// Sets the tool choice for the request.
+    ///
+    /// ## Arguments
+    ///
+    /// * `choice` - The tool for the model to use
+    pub fn tool_choice<To: Into<ToolChoice>>(mut self, choice: To) -> Request<T> {
+        self.tool_choice = Some(choice.into());
+        self
+    }
+
+    /// Sets the input parameters for the request, to check for prompt injection and PII.
+    ///
+    /// ## Arguments
+    ///
+    /// * `block_prompt_injection` - Determines whether to check for prompt injection in the request.
+    /// * `pii` - Sets the `pii::InputMethod` and the `pii::ReplacementMethod`.
+    pub fn tools(
+        mut self,
+        block_prompt_injection: bool,
+        pii: Option<(pii::InputMethod, pii::ReplaceMethod)>,
+    ) -> Request<T> {
+        match self.tools {
+            Some(ref mut x) => {
+                // set values on request input
+                x.block_prompt_injection = block_prompt_injection;
+                if let Some(p) = pii {
+                    x.pii = Some(p.0);
+                    x.pii_replace_method = Some(p.1);
+                }
+            }
+            None => {
+                // create request input
+                let mut input = RequestInput {
+                    block_prompt_injection,
+                    ..Default::default()
+                };
+
+                if let Some(p) = pii {
+                    input.pii = Some(p.0);
+                    input.pii_replace_method = Some(p.1);
+                }
+                self.input = Some(input);
+            }
+        }
         self
     }
 
@@ -185,9 +388,9 @@ impl<T> Request<T> {
     ///
     /// ## Arguments
     ///
-    /// * `top` - The Top p setting for the request. Used to control randomness.
-    pub fn top_p(mut self, top: f64) -> Request<T> {
-        self.top_p = Some(top);
+    /// * `top_p` - The Top p setting for the request. Used to control randomness.
+    pub fn top_p(mut self, top_p: f64) -> Request<T> {
+        self.top_p = Some(top_p);
         self
     }
 
@@ -277,7 +480,7 @@ pub struct Message {
     pub content: String,
 }
 
-/// Reponse returned from the completion response for chat.
+/// Response returned from the completion response for chat.
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Response {
@@ -288,7 +491,7 @@ pub struct Response {
     pub choices: Vec<ResponseChoice>,
 }
 
-/// Represents the content that is streamed in a chat events reponse.
+/// Represents the content that is streamed in a chat events response.
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 #[serde(default)]
 pub struct EventsDelta {
@@ -301,7 +504,6 @@ pub struct EventsDelta {
 pub struct ChoiceEvents {
     pub generated_text: Option<String>,
     pub index: i64,
-    pub logprobs: f64,
     pub finish_reason: Option<String>,
     pub delta: EventsDelta,
 }
@@ -318,7 +520,7 @@ pub struct ResponseEvents {
     pub error: Option<String>,
 }
 
-/// The different role types for chat requests/respones.
+/// The different role types for chat requests/responses.
 #[derive(Debug, Deserialize, Serialize, PartialEq, Default, Clone)]
 pub enum Roles {
     #[serde(rename = "system")]
@@ -341,17 +543,17 @@ mod tests {
 
     #[test]
     fn chat_request() {
-        let req = Request::<Message>::new("Hermes-2-Pro-Llama-3-8B".to_string())
+        let req = Request::<Message>::new("Hermes-3-Llama-3.1-8B".to_string())
             .temperature(0.1)
-            .max_tokens(1000)
+            .max_completion_tokens(1000)
             .top_p(12.6)
             .add_message(Roles::User, PROMPT.to_string())
             .input(true, None)
             .output(true, true);
 
-        assert_eq!(req.model, "Hermes-2-Pro-Llama-3-8B".to_string());
-        assert_eq!(req.temperature, 0.1);
-        assert_eq!(req.max_tokens, 1000);
+        assert_eq!(req.model, "Hermes-3-Llama-3.1-8B".to_string());
+        assert_eq!(req.temperature, Some(0.1));
+        assert_eq!(req.max_completion_tokens, Some(1000));
         assert_eq!(req.top_p.expect("Some to_p"), 12.6);
 
         assert_eq!(req.messages.len(), 1);
@@ -370,17 +572,17 @@ mod tests {
 
     #[test]
     fn chat_request_vision() {
-        let req = Request::<MessageVision>::new("llava-1.5-7b-hf".to_string())
+        let req = Request::<MessageVision>::new("Qwen2.5-VL-7B-Instruct".to_string())
             .temperature(0.2)
-            .max_tokens(2000)
+            .max_completion_tokens(2000)
             .top_p(12.1)
             .add_message(Roles::User, PROMPT.to_string(), IMAGE_URI.to_string())
             .input(true, Some((InputMethod::Block, ReplaceMethod::Fake)))
             .output(true, true);
 
-        assert_eq!(req.model, "llava-1.5-7b-hf".to_string());
-        assert_eq!(req.temperature, 0.2);
-        assert_eq!(req.max_tokens, 2000);
+        assert_eq!(req.model, "Qwen2.5-VL-7B-Instruct".to_string());
+        assert_eq!(req.temperature, Some(0.2));
+        assert_eq!(req.max_completion_tokens, Some(2000));
         assert_eq!(req.top_p.expect("Some to_p"), 12.1);
 
         assert_eq!(req.messages.len(), 1);

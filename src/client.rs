@@ -5,7 +5,7 @@ use crate::built_info;
 use crate::{
     chat, completion, embedding, factuality,
     injection, pii, rerank, toxicity, translate,
-    tokenize, models, Result
+    documents_extract, audio_transcribe, tokenize, models, Result
 };
 use dotenvy;
 use eventsource_client::Client as EventClient;
@@ -14,6 +14,7 @@ use futures::TryStreamExt;
 use log::error;
 use reqwest::{
     header::{HeaderMap, HeaderValue},
+    multipart::{Part, Form},
     ClientBuilder, Response, StatusCode,
 };
 use serde::{Deserialize, Serialize};
@@ -249,6 +250,196 @@ impl Client {
         Ok(comp_response)
     }
 
+    /// Calls the generate completion endpoint.
+    ///
+    /// ## Arguments:
+    ///
+    /// * `req` - An instance of [`chat::Request::<Message>`]
+    /// * `event_handler` - Event handler function that is called when a server side event is raised.
+    ///
+    /// Returns an instance of [`completion::Response`].
+    ///
+    /// The generated text is returned via events from the server. The event handler function gets called
+    /// every time the client receives an event response with data. Once the server terminates the events the call returns.
+    /// The entire [`completion::Response`] response is then returned to the caller.
+    ///
+    /// A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
+    pub async fn generate_completion_events<F>(
+        &self,
+        req: &mut completion::Request,
+        event_handler: &mut F,
+    ) -> Result<Option<completion::ResponseEvents>>
+    where
+        F: FnMut(&String),
+    {
+        let url = format!("{}{}", &self.inner.server, completion::PATH);
+
+        req.stream = true;
+        req.output = None;
+
+        let body = serde_json::to_string(&req)?;
+
+        let user_agent = format!("{} v{}", USER_AGENT, built_info::PKG_VERSION);
+
+        let key = format!("Bearer {}", &self.inner.api_key);
+
+        let client = eventsource_client::ClientBuilder::for_url(&url)?
+            .header("User-Agent", user_agent.as_str())?
+            .header("Authorization", &key)?
+            .method("POST".to_string())
+            .body(body)
+            .build();
+
+        let mut stream = Box::pin(client.stream());
+
+        loop {
+            match stream.try_next().await {
+                Ok(Some(event)) => {
+                    match event {
+                        SSE::Connected(_) => continue,
+                        SSE::Comment(_) => continue,
+                        SSE::Event(evt) => {
+                            // Check for [DONE]
+                            if evt.data == "[DONE]" {
+                                return Ok(None);
+                            }
+
+                            // JSON Response
+                            let resp: completion::ResponseEvents = match serde_json::from_str(&evt.data) {
+                                Ok(v) => v,
+                                Err(e) => {
+                                    return Err(Box::from(ApiError {
+                                        error: format!("error parsing stream response: {}", e),
+                                    }));
+                                }
+                            };
+
+                            if resp.choices.is_empty() {
+                                // No data to stream or Done
+                                continue;
+                            }
+
+                            // Finish Reason == Stop That is the final Response.
+                            if resp.choices[0].finish_reason == Some("stop".to_string()) {
+                                return Ok(Some(resp));
+                            }
+
+                            let msg = resp.choices[0].text.clone();
+                            event_handler(&msg);
+                        }
+                    }
+                }
+
+                Ok(None) => continue,
+                Err(e) => match e {
+                    eventsource_client::Error::StreamClosed => break,
+                    _ => return Err(stream_error_into_api_err(e).await),
+                },
+            }
+        }
+
+        Ok(None)
+    }
+
+    /// Calls the generate completion endpoint.
+    ///
+    /// ## Arguments:
+    ///
+    /// * `req` - An instance of [`completion::Request`]
+    /// * `sender` - A sender instance for a channel where there is a receiver waiting for a message.
+    ///
+    /// Returns an instance of [`completion::Response`].
+    ///
+    /// The generated text is returned via events from the server. The sender gets called
+    /// every time the client receives an event response with data. Once the server terminates the events the call returns.
+    /// The receiver should handle the `stop` message which means there are no more messages to receive and exit.
+    /// The entire [`completion::Response`] response is then returned to the caller.
+    ///
+    /// A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
+    pub async fn generate_completion_events_async(
+        &self,
+        req: &mut completion::Request,
+        sender: &Sender<String>,
+    ) -> Result<Option<completion::ResponseEvents>> {
+        let url = format!("{}{}", &self.inner.server, completion::PATH);
+
+        req.stream = true;
+        req.output = None;
+
+        let body = serde_json::to_string(&req)?;
+
+        let user_agent = format!("{} v{}", USER_AGENT, built_info::PKG_VERSION);
+
+        let key = format!("Bearer {}", &self.inner.api_key);
+
+        let client = eventsource_client::ClientBuilder::for_url(&url)?
+            .header("User-Agent", user_agent.as_str())?
+            .header("Authorization", &key)?
+            .method("POST".to_string())
+            .body(body)
+            .build();
+
+        let mut stream = Box::pin(client.stream());
+
+        loop {
+            match stream.try_next().await {
+                Ok(Some(event)) => {
+                    match event {
+                        SSE::Connected(_) => continue,
+                        SSE::Comment(_) => continue,
+                        SSE::Event(evt) => {
+                            // Check for [DONE]
+                            if evt.data.to_lowercase() == "[done]" {
+                                let _ = sender.send("stop".to_string()).await;
+                                return Ok(None);
+                            }
+
+                            // JSON Response
+                            let resp: completion::ResponseEvents = match serde_json::from_str(&evt.data) {
+                                Ok(v) => v,
+                                Err(e) => {
+                                    return Err(Box::from(ApiError {
+                                        error: format!("error parsing stream response: {}", e),
+                                    }));
+                                }
+                            };
+
+                            if resp.choices.is_empty() {
+                                // No data to stream or Done
+                                continue;
+                            }
+
+                            // Finish Reason == Stop That is the final Response.
+                            if resp.choices[0].finish_reason == Some("stop".to_string()) {
+                                let _ = sender.send("stop".to_string()).await;
+                                return Ok(Some(resp));
+                            }
+
+                            let msg = resp.choices[0].text.clone();
+
+                            match sender.send(msg).await {
+                                Ok(_) => (),
+                                Err(e) => {
+                                    error!("generate_chat_completion_events_async - error sending on channel, {e}");
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Ok(None) => continue,
+                Err(e) => match e {
+                    eventsource_client::Error::StreamClosed => break,
+                    _ => return Err(stream_error_into_api_err(e).await),
+                },
+            }
+        }
+
+        Ok(None)
+    }
+    
     /// Calls the generate chat completion endpoint.
     ///
     /// ## Arguments:
@@ -328,6 +519,7 @@ impl Client {
             match stream.try_next().await {
                 Ok(Some(event)) => {
                     match event {
+                        SSE::Connected(_) => continue,
                         SSE::Comment(_) => continue,
                         SSE::Event(evt) => {
                             // Check for [DONE]
@@ -417,6 +609,7 @@ impl Client {
             match stream.try_next().await {
                 Ok(Some(event)) => {
                     match event {
+                        SSE::Connected(_) => continue,
                         SSE::Comment(_) => continue,
                         SSE::Event(evt) => {
                             // Check for [DONE]
@@ -501,6 +694,97 @@ impl Client {
         Ok(chat_response)
     }
 
+    /// Calls the documents extract endpoint.
+    ///
+    /// ## Arguments:
+    ///
+    /// * `req` - An instance of [`rerank::Request`]
+    ///
+    /// Returns an instance of [`rerank::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
+    pub async fn documents_extract(
+        &self,
+        req: &documents_extract::Request,
+    ) -> Result<documents_extract::Response> {
+        let url = format!("{}{}", &self.inner.server, documents_extract::PATH);
+
+        let result = self
+            .inner
+            .http_client
+            .post(url)
+            .headers(self.inner.headers.clone())
+            .json(req)
+            .send()
+            .await?;
+
+        if result.status() != StatusCode::OK {
+            return Err(retrieve_error(result).await);
+        }
+
+        let documents_response = result.json::<documents_extract::Response>().await?;
+
+        Ok(documents_response)
+    }
+
+    /// Calls the documents extract endpoint.
+    ///
+    /// ## Arguments:
+    ///
+    /// * `req` - An instance of [`rerank::Request`]
+    ///
+    /// Returns an instance of [`rerank::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
+    pub async fn audio_transcribe(
+        &self,
+        req: &audio_transcribe::Request,
+    ) -> Result<audio_transcribe::Response> {
+        let url = format!("{}{}", &self.inner.server, audio_transcribe::PATH);
+
+        let mut form = Form::new();
+
+        if let model = &req.model {
+            form = form.text("model", model.clone());
+        }
+        if let Some(language) = &req.language {
+            form = form.text("language", language.clone());
+        }
+        if let Some(prompt) = &req.prompt {
+            form = form.text("prompt", prompt.clone());
+        }
+        if let Some(temperature) = req.temperature {
+            form = form.text("temperature", temperature.to_string());
+        }
+        if let 
+        if let Some(diarization) = req.diarization {
+            form = form.text("diarization", diarization.clone());
+        }
+
+        // Add the audio file
+        if let Some(audio_data) = &req.file {
+            let part = Part::bytes(audio_data.clone())
+                .file_name("audio.wav") // or appropriate extension
+                .mime_str("audio/wav")?; // or appropriate MIME type
+            form = form.part("audio", part);
+        }
+
+        let result = self
+            .inner
+            .http_client
+            .post(url)
+            .headers(self.inner.headers.clone())
+            .multipart(form) // Changed from .json(req) to .multipart(form)
+            .send()
+            .await?;
+
+        if result.status() != StatusCode::OK {
+            return Err(retrieve_error(result).await);
+        }
+
+        let transcribe_response = result.json::<audio_transcribe::Response>().await?;
+
+        Ok(transcribe_response)
+    }
+    
     /// Calls the rerank endpoint.
     ///
     /// ## Arguments:
@@ -573,6 +857,7 @@ impl Client {
     ///
     /// Returns a [`translate::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
+    #[deprecated(since = "0.15.0")]
     pub async fn translate(&self, req: &translate::Request) -> Result<translate::Response> {
         let url = format!("{}{}", &self.inner.server, translate::PATH);
 

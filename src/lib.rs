@@ -18,7 +18,7 @@
 //!                     chat::Roles::User,
 //!                     "How do you feel about the world in general?".to_string(),
 //!                 )
-//!                 .max_tokens(1000)
+//!                 .max_completion_tokens(1000)
 //!                 .temperature(0.85);
 //!
 //!     let result = clt.generate_chat_completion(&req)
@@ -46,6 +46,8 @@ pub mod toxicity;
 pub mod translate;
 pub mod tokenize;
 pub mod models;
+pub mod audio_transcribe;
+pub mod documents_extract;
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -124,7 +126,7 @@ mod tests {
         let clt = client::Client::from_environment(pg_env).expect("client value");
 
         let req = completion::Request::new(
-            "Hermes-2-Pro-Llama-3-8B".to_string(),
+            "Hermes-3-Llama-3.1-8B".to_string(),
             "Will I lose my hair?".to_string(),
         );
 
@@ -159,7 +161,7 @@ mod tests {
                 chat::Roles::User,
                 "How do you feel about the world in general".to_string(),
             )
-            .max_tokens(1000)
+            .max_completion_tokens(1000)
             .temperature(1.1);
 
         tokio_test::block_on(async {
@@ -203,12 +205,12 @@ mod tests {
     fn chat_completion_stream_async() {
         let clt = client::Client::new().expect("client value");
 
-        let mut req = chat::Request::<chat::Message>::new("Hermes-2-Pro-Llama-3-8B".to_string())
+        let mut req = chat::Request::<chat::Message>::new("Hermes-3-Llama-3.1-8B".to_string())
             .add_message(
                 chat::Roles::User,
                 "How do you feel about the world in general".to_string(),
             )
-            .max_tokens(1000)
+            .max_completion_tokens(1000)
             .temperature(1.1);
 
         tokio_test::block_on(async {
@@ -267,7 +269,7 @@ mod tests {
         let clt = client::Client::new().expect("client value");
 
         let req = chat::Request::<chat::Message>::new("invalid model".to_string())
-            .max_tokens(1000)
+            .max_completion_tokens(1000)
             .temperature(1.1)
             .add_message(chat::Roles::User, "Will I lose my hair?".to_string());
 
@@ -297,8 +299,8 @@ mod tests {
 
         let clt = client::Client::from_environment(pg_env).expect("client value");
 
-        let req = chat::Request::<chat::Message>::new("neural-chat-7b-v3-3".to_string())
-            .max_tokens(1000)
+        let req = chat::Request::<chat::Message>::new("Hermes-3-Llama-3.1-8B".to_string())
+            .max_completion_tokens(1000)
             .temperature(1.1)
             .add_message(chat::Roles::User, "Will I lose my hair?".to_string());
 
@@ -315,7 +317,7 @@ mod tests {
             assert!(!result.id.is_empty());
             assert!(!result.object.is_empty());
             assert!(result.created > 0);
-            assert_eq!(result.model, "Neural-Chat-7B".to_string());
+            assert_eq!(result.model, "Hermes-3-Llama-3.1-8B".to_string());
 
             assert!(!result.choices.is_empty());
 
@@ -333,7 +335,7 @@ mod tests {
         let clt = client::Client::new().expect("client value");
 
         let req = chat::Request::<MessageVision>::new("invalid model".to_string())
-            .max_tokens(1000)
+            .max_completion_tokens(1000)
             .temperature(0.2)
             .add_message(
                 chat::Roles::User,
@@ -367,8 +369,8 @@ mod tests {
 
         let clt = client::Client::from_environment(pg_env).expect("client value");
 
-        let req = chat::Request::<MessageVision>::new("llava-1.5-7b-hf".to_string())
-            .max_tokens(1000)
+        let req = chat::Request::<MessageVision>::new("Qwen2.5-VL-7B-Instruct".to_string())
+            .max_completion_tokens(1000)
             .temperature(0.2)
             .add_message(
                 chat::Roles::User,
@@ -389,7 +391,7 @@ mod tests {
             assert!(!result.id.is_empty());
             assert!(!result.object.is_empty());
             assert!(result.created > 0);
-            assert_eq!(result.model, "llava-1.5-7b-hf".to_string());
+            assert_eq!(result.model, "Qwen2.5-VL-7B-Instruct".to_string());
 
             assert!(!result.choices.is_empty());
 
