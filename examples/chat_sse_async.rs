@@ -1,5 +1,5 @@
 //! `chat_sse_async` sends a prompt to Prediction Guard and returns a single response of
-//! type [`chat::Response`]. It uses a channel to send events back to the reciever
+//! type [`chat::Response`]. It uses a channel to send events back to the receiver
 //! allowing for asynchronous processing of the event.
 extern crate prediction_guard as pg_client;
 

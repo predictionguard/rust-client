@@ -1,5 +1,13 @@
 //! `translates` sends text, source language and target language to Prediction Guard and returns a single response of
 //! type [`translate::Response`].
+//!
+//! # Deprecation Notice
+//!
+//! This example is deprecated as of version 0.15.0 because the translate API endpoint
+//! is no longer supported by the Prediction Guard API.
+
+#![allow(deprecated)]
+
 extern crate prediction_guard as pg_client;
 
 use pg_client::{client, translate};

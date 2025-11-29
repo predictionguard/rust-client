@@ -43,6 +43,7 @@ pub mod injection;
 pub mod pii;
 pub mod rerank;
 pub mod toxicity;
+#[deprecated(since = "0.15.0", note = "The translate API endpoint is no longer supported")]
 pub mod translate;
 pub mod tokenize;
 pub mod models;

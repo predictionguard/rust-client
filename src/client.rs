@@ -857,7 +857,7 @@ impl Client {
     ///
     /// Returns a [`translate::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
     /// is considered an error.
-    #[deprecated(since = "0.15.0")]
+    #[deprecated(since = "0.15.0", note = "The translate API endpoint is no longer supported")]
     pub async fn translate(&self, req: &translate::Request) -> Result<translate::Response> {
         let url = format!("{}{}", &self.inner.server, translate::PATH);
 
