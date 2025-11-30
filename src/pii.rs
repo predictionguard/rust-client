@@ -111,8 +111,11 @@ pub struct TypesAndPositions {
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Check {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub prompt: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub new_prompt: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub types_and_positions: Option<Vec<TypesAndPositions>>,
     pub index: i64,
 }

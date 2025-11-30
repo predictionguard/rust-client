@@ -8,8 +8,16 @@ use pg_client::{client, tokenize};
 async fn main() {
     let clt = client::Client::new().expect("client value");
 
+    // Load the list of models available for tokenization.
+    let models = clt
+        .retrieve_model_list("tokenize".to_string())
+        .await
+        .expect("model list");
+
+    assert!(!models.is_empty());
+    
     let req = tokenize::Request::new(
-        "neural-chat-7b-v3-3".to_string(),
+        models[models.len() - 1].to_string(),
         "Tell me a joke.".to_string(),
     );
 

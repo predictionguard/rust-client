@@ -46,6 +46,7 @@ pub mod toxicity;
 #[deprecated(since = "0.15.0", note = "The translate API endpoint is no longer supported")]
 pub mod translate;
 pub mod tokenize;
+pub mod detokenize;
 pub mod models;
 pub mod audio_transcribe;
 pub mod documents_extract;
@@ -776,6 +777,51 @@ mod tests {
             assert!(result.created > 0);
 
             let tokens = result.tokens;
+            assert!(!tokens.is_empty());
+            assert!(tokens[0].id > 0);
+            assert!(tokens[0].start >= 0);
+        });
+    }
+
+    #[test]
+    fn detokenize() {
+        let server = MockServer::start();
+        let url = format!("http://{}", server.address());
+
+        let detokenize_mock = server.mock(|when, then| {
+            when.method(POST).path(detokenize::PATH);
+            then.status(200)
+                .header("Content-Type", "application/json")
+                .body(DETOKENIZE_RESPONSE);
+        });
+
+        let pg_env = client::PgEnvironment {
+            key: "api-key".to_string(),
+            host: url,
+        };
+
+        let clt = client::Client::from_environment(pg_env).expect("client value");
+
+        let req = detokenize::Request::new(
+            "neural-chat-7b-v3-3".to_string(),
+            "Tell me a joke.".to_string(),
+        );
+
+        tokio_test::block_on(async {
+            let result = clt
+                .detokenize(&req)
+                .await
+                .expect("error from detokenize");
+
+            detokenize_mock.assert();
+
+            println!("\n\ndetokenize response:\n{:?}\n\n", result);
+
+            assert!(!result.id.is_empty());
+            assert!(!result.object.is_empty());
+            assert!(result.created > 0);
+
+            let text = result.text;
             assert!(!tokens.is_empty());
             assert!(tokens[0].id > 0);
             assert!(tokens[0].start >= 0);

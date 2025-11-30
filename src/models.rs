@@ -27,10 +27,16 @@ impl Request {
 pub struct ModelCapabilities {
     pub chat_completion: bool,
     pub chat_with_image: bool,
+    pub responses: bool,
+    pub responses_with_image: bool,
     pub completion: bool,
     pub embedding: bool,
     pub embedding_with_image: bool,
     pub tokenize: bool,
+    pub detokenize: bool,
+    pub rerank: bool,
+    pub tool_calling: bool,
+    pub reasoning: bool,
 }
 
 /// Represents a single model response.

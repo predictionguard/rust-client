@@ -5,7 +5,8 @@ use crate::built_info;
 use crate::{
     chat, completion, embedding, factuality,
     injection, pii, rerank, toxicity, translate,
-    documents_extract, audio_transcribe, tokenize, models, Result
+    documents_extract, audio_transcribe, tokenize,
+    detokenize, models, Result
 };
 use dotenvy;
 use eventsource_client::Client as EventClient;
@@ -998,6 +999,37 @@ impl Client {
         Ok(token_response)
     }
 
+    /// Calls the detokenize endpoint.
+    ///
+    /// ## Arguments:
+    ///
+    /// * `req` - An instance of [`detokenize::Request`]
+    ///
+    /// Returns an instance of [`detokenize::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
+    /// is considered an error.
+    pub async fn detokenize(
+        &self,
+        req: &detokenize::Request,
+    ) -> Result<detokenize::Response> {
+        let url = format!("{}{}", &self.inner.server, detokenize::PATH);
+
+        let result = self
+            .inner
+            .http_client
+            .post(url)
+            .headers(self.inner.headers.clone())
+            .json(req)
+            .send()
+            .await?;
+
+        if result.status() != StatusCode::OK {
+            return Err(retrieve_error(result).await);
+        }
+
+        let detokenize_response = result.json::<detokenize::Response>().await?;
+
+        Ok(detokenize_response)
+    }
 
     /// Retrieves the list of models available.
     ///
