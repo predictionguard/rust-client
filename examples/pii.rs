@@ -13,6 +13,7 @@ async fn main() {
         "My email is joe@gmail.com and my number is 270-123-4567".to_string(),
         true,
         ReplaceMethod::Mask,
+        vec!["PHONE_NUMBER".to_string()],
     );
 
     let result = clt.pii(&req).await.expect("error from pii");

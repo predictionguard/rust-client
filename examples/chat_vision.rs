@@ -18,7 +18,7 @@ async fn main() {
         .temperature(0.10)
         .top_p(0.1)
         .top_k(50)
-        .max_tokens(300)
+        .max_completion_tokens(300)
         .add_message(
             chat::Roles::User,
             "What is in this image?".to_string(),

@@ -18,7 +18,8 @@ async fn main() {
 
     let req = detokenize::Request::new(
         models[models.len() - 1].to_string(),
-        "tokens"
+        // TODO: Change to actual
+        vec![],
     );
 
     let result = clt

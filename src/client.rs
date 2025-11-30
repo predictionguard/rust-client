@@ -1,12 +1,11 @@
 //! Used to connect to the Prediction Guard API.
-use std::{env, fmt, sync::Arc, time::Duration};
+use std::{env, error::Error, fmt, sync::Arc, time::Duration};
 
 use crate::built_info;
 use crate::{
     chat, completion, embedding, factuality,
-    injection, pii, rerank, toxicity, translate,
-    documents_extract, audio_transcribe, tokenize,
-    detokenize, models, Result
+    injection, pii, rerank, toxicity, documents_extract, 
+    audio_transcribe, tokenize, detokenize, models, Result
 };
 use dotenvy;
 use eventsource_client::Client as EventClient;
@@ -15,7 +14,7 @@ use futures::TryStreamExt;
 use log::error;
 use reqwest::{
     header::{HeaderMap, HeaderValue},
-    multipart::{Part, Form},
+    multipart::Form,
     ClientBuilder, Response, StatusCode,
 };
 use serde::{Deserialize, Serialize};
@@ -35,7 +34,7 @@ impl fmt::Display for ApiError {
     }
 }
 
-impl std::error::Error for ApiError {}
+impl Error for ApiError {}
 
 /// Prediction Guard Configuration
 pub struct PgEnvironment {
@@ -850,36 +849,6 @@ impl Client {
         Ok(fact_response)
     }
 
-    /// Calls the translate endpoint.
-    ///
-    /// ## Arguments:
-    ///
-    /// `req` - Instance of [`translate::Request`]
-    ///
-    /// Returns a [`translate::Response`]. A 200 (Ok) status code is expected from the Prediction Guard api. Any other status code
-    /// is considered an error.
-    #[deprecated(since = "0.15.0", note = "The translate API endpoint is no longer supported")]
-    pub async fn translate(&self, req: &translate::Request) -> Result<translate::Response> {
-        let url = format!("{}{}", &self.inner.server, translate::PATH);
-
-        let result = self
-            .inner
-            .http_client
-            .post(url)
-            .headers(self.inner.headers.clone())
-            .json(req)
-            .send()
-            .await?;
-
-        if result.status() != StatusCode::OK {
-            return Err(retrieve_error(result).await);
-        }
-
-        let translate_response = result.json::<translate::Response>().await?;
-
-        Ok(translate_response)
-    }
-
     /// Calls the PII endpoint that is used to remove/detect PII information in the request.
     ///
     /// ## Arguments:
@@ -1067,7 +1036,7 @@ impl Client {
     }
 }
 
-async fn retrieve_error(resp: Response) -> Box<dyn std::error::Error> {
+async fn retrieve_error(resp: Response) -> Box<dyn Error> {
     let err = match resp.json::<ApiError>().await {
         Ok(x) => x,
         Err(e) => return Box::from(format!("error parsing error response, {}", e)),
@@ -1076,7 +1045,7 @@ async fn retrieve_error(resp: Response) -> Box<dyn std::error::Error> {
     err.into()
 }
 
-async fn stream_error_into_api_err(err: eventsource_client::Error) -> Box<dyn std::error::Error> {
+async fn stream_error_into_api_err(err: eventsource_client::Error) -> Box<dyn Error> {
     let msg = format!("{}", err);
     Box::from(ApiError {
         error: msg.to_string(),

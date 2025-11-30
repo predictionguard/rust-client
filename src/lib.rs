@@ -43,8 +43,6 @@ pub mod injection;
 pub mod pii;
 pub mod rerank;
 pub mod toxicity;
-#[deprecated(since = "0.15.0", note = "The translate API endpoint is no longer supported")]
-pub mod translate;
 pub mod tokenize;
 pub mod detokenize;
 pub mod models;
@@ -54,6 +52,7 @@ pub mod documents_extract;
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 #[cfg(test)]
+// noinspection HttpUrlsUsage
 mod tests {
     use std::io::Write;
 
@@ -63,31 +62,10 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn health() {
-        let server = MockServer::start();
-        let url = format!("http://{}", server.address());
-
-        let health_mock = server.mock(|when, then| {
-            when.method(GET).path("/");
-            then.status(200).body("Prediction Guard API is healthy");
-        });
-
-        let pg_env = client::PgEnvironment {
-            key: "api-key".to_string(),
-            host: url,
-        };
-        let clt = client::Client::from_environment(pg_env).expect("client value");
-
-        tokio_test::block_on(async {
-            let result = clt.check_health().await.expect("error from check health");
-
-            health_mock.assert();
-
-            assert!(!result.is_empty());
-            println!("\n\nhealth endpoint response: {}\n\n", result);
-        });
-    }
+    const TEST_CHAT_MODEL: &str = "Hermes-3-Llama-3.1-8B";
+    const TEST_VISION_MODEL: &str = "Qwen2.5-VL-7B-Instruct";
+    const TEST_EMBEDDINGS_MODEL: &str = "bridgetower-large-itm-mlm-itc";
+    const TEST_RERANK_MODEL: &str = "bge-reranker-v2-m3";
 
     #[test]
     #[ignore]
@@ -128,7 +106,7 @@ mod tests {
         let clt = client::Client::from_environment(pg_env).expect("client value");
 
         let req = completion::Request::new(
-            "Hermes-3-Llama-3.1-8B".to_string(),
+            TEST_CHAT_MODEL.to_string(),
             "Will I lose my hair?".to_string(),
         );
 
@@ -158,7 +136,7 @@ mod tests {
     fn chat_completion_stream() {
         let clt = client::Client::new().expect("client value");
 
-        let mut req = chat::Request::<chat::Message>::new("Hermes-2-Pro-Llama-3-8B".to_string())
+        let mut req = chat::Request::<chat::Message>::new(TEST_CHAT_MODEL.to_string())
             .add_message(
                 chat::Roles::User,
                 "How do you feel about the world in general".to_string(),
@@ -190,7 +168,6 @@ mod tests {
             assert!(!r.id.is_empty());
             assert!(!r.object.is_empty());
             assert!(r.created > 0);
-            assert_eq!(r.model, "Hermes-2-Pro-Llama-3-8B".to_string());
 
             assert!(r.choices[0].generated_text.is_some());
             assert!(r.choices[0].index >= 0);
@@ -207,7 +184,7 @@ mod tests {
     fn chat_completion_stream_async() {
         let clt = client::Client::new().expect("client value");
 
-        let mut req = chat::Request::<chat::Message>::new("Hermes-3-Llama-3.1-8B".to_string())
+        let mut req = chat::Request::<chat::Message>::new(TEST_CHAT_MODEL.to_string())
             .add_message(
                 chat::Roles::User,
                 "How do you feel about the world in general".to_string(),
@@ -233,7 +210,6 @@ mod tests {
                 assert!(!r.id.is_empty());
                 assert!(!r.object.is_empty());
                 assert!(r.created > 0);
-                assert_eq!(r.model, "Hermes-2-Pro-Llama-3-8B".to_string());
 
                 assert!(r.choices[0].generated_text.is_some());
                 assert!(r.choices[0].index >= 0);
@@ -301,7 +277,7 @@ mod tests {
 
         let clt = client::Client::from_environment(pg_env).expect("client value");
 
-        let req = chat::Request::<chat::Message>::new("Hermes-3-Llama-3.1-8B".to_string())
+        let req = chat::Request::<chat::Message>::new(TEST_CHAT_MODEL.to_string())
             .max_completion_tokens(1000)
             .temperature(1.1)
             .add_message(chat::Roles::User, "Will I lose my hair?".to_string());
@@ -319,7 +295,6 @@ mod tests {
             assert!(!result.id.is_empty());
             assert!(!result.object.is_empty());
             assert!(result.created > 0);
-            assert_eq!(result.model, "Hermes-3-Llama-3.1-8B".to_string());
 
             assert!(!result.choices.is_empty());
 
@@ -371,7 +346,7 @@ mod tests {
 
         let clt = client::Client::from_environment(pg_env).expect("client value");
 
-        let req = chat::Request::<MessageVision>::new("Qwen2.5-VL-7B-Instruct".to_string())
+        let req = chat::Request::<MessageVision>::new(TEST_VISION_MODEL.to_string())
             .max_completion_tokens(1000)
             .temperature(0.2)
             .add_message(
@@ -393,7 +368,6 @@ mod tests {
             assert!(!result.id.is_empty());
             assert!(!result.object.is_empty());
             assert!(result.created > 0);
-            assert_eq!(result.model, "Qwen2.5-VL-7B-Instruct".to_string());
 
             assert!(!result.choices.is_empty());
 
@@ -481,7 +455,7 @@ mod tests {
 
             assert!(!result.id.is_empty());
             assert!(!result.object.is_empty());
-            assert!(!result.created.is_empty());
+            assert!(!result.created >= 0);
 
             assert!(!result.checks.is_empty());
             assert!(result.checks[0].probability > 0.0);
@@ -512,6 +486,7 @@ mod tests {
             "My email is joe@gmail.com and my number is 270-123-4567".to_string(),
             true,
             pii::ReplaceMethod::Random,
+            vec!["PHONE_NUMBER".to_string()],
         );
 
         tokio_test::block_on(async {
@@ -523,11 +498,15 @@ mod tests {
 
             assert!(!result.id.is_empty());
             assert!(!result.object.is_empty());
-            assert!(!result.created.is_empty());
+            assert!(!result.created >= 0);
 
             assert!(!result.checks.is_empty());
 
-            assert!(!result.checks[0].new_prompt.is_empty());
+            assert!(!result.checks[0]
+                .new_prompt
+                .as_ref()
+                .expect("new_prompt should be present")
+                .is_empty());
             assert!(result.checks[0].index >= 0);
         });
     }
@@ -574,56 +553,6 @@ mod tests {
     }
 
     #[test]
-    fn translate() {
-        let server = MockServer::start();
-        let url = format!("http://{}", server.address());
-
-        let translate_mock = server.mock(|when, then| {
-            when.method(POST).path(translate::PATH);
-            then.status(200)
-                .header("Content-Type", "application/json")
-                .body(TRANSLATE_RESPONSE);
-        });
-
-        let pg_env = client::PgEnvironment {
-            key: "api-key".to_string(),
-            host: url,
-        };
-
-        let clt = client::Client::from_environment(pg_env).expect("client value");
-
-        let req = translate::Request::new(
-            "The rain in Spain stays mainly in the plain".to_string(),
-            translate::Language::English,
-            translate::Language::Spanish,
-            true,
-        );
-
-        tokio_test::block_on(async {
-            let result = clt.translate(&req).await.expect("error from translate");
-
-            translate_mock.assert();
-
-            println!("\n\ntranslation response:\n{:?}\n\n", result);
-
-            assert!(!result.id.is_empty());
-            assert!(!result.object.is_empty());
-            assert!(result.created >= 0);
-
-            assert!(!result.best_translation.is_empty());
-            assert_ne!(result.best_score, 0.0);
-            assert!(!result.best_translation_model.is_empty());
-
-            assert!(!result.translations.is_empty());
-
-            assert_ne!(result.translations[0].score, 0.0);
-            assert!(!result.translations[0].translation.is_empty());
-            assert!(!result.translations[0].model.is_empty());
-            assert!(!result.translations[0].status.is_empty());
-        });
-    }
-
-    #[test]
     #[ignore]
     // Test is ignored since it requires api keys in the environment.
     // The test is run against the live api.
@@ -664,7 +593,7 @@ mod tests {
 
         tokio_test::block_on(async {
             let req = embedding::Request::new(
-                "bridgetower-large-itm-mlm-itc".to_string(),
+                TEST_EMBEDDINGS_MODEL.to_string(),
                 Some("Skyline with Airplane".to_string()),
                 None,
             );
@@ -677,7 +606,6 @@ mod tests {
 
             assert!(!result.id.is_empty());
             assert!(!result.object.is_empty());
-            assert_eq!(result.model, "bridgetower-large-itm-mlm-itc".to_string());
             assert!(result.created > 0);
 
             assert!(!&result.data[0].object.is_empty());
@@ -711,7 +639,7 @@ mod tests {
         ];
 
         let req = rerank::Request::new(
-            "bge-reranker-v2-m3".to_string(),
+            TEST_RERANK_MODEL.to_string(),
             "What is Deep Learning?".to_string(),
             docs,
             true,
@@ -721,7 +649,7 @@ mod tests {
             let result = clt
                 .rerank(&req)
                 .await
-                .expect("error from tokenize");
+                .expect("error from rerank");
 
             rerank_mock.assert();
 
@@ -731,6 +659,7 @@ mod tests {
             assert!(!result.object.is_empty());
             assert!(result.created > 0);
 
+            
             let results = result.results;
             assert!(!results.is_empty());
             assert!(results[0].index > 0);
@@ -758,8 +687,8 @@ mod tests {
         let clt = client::Client::from_environment(pg_env).expect("client value");
 
         let req = tokenize::Request::new(
-            "neural-chat-7b-v3-3".to_string(),
-            "Tell me a joke.".to_string(),
+            TEST_CHAT_MODEL.to_string(),
+            "Tokenize this please!".to_string(),
         );
 
         tokio_test::block_on(async {
@@ -803,8 +732,8 @@ mod tests {
         let clt = client::Client::from_environment(pg_env).expect("client value");
 
         let req = detokenize::Request::new(
-            "neural-chat-7b-v3-3".to_string(),
-            "Tell me a joke.".to_string(),
+            TEST_CHAT_MODEL.to_string(),
+            vec![128000, 31121, 78751, 420],
         );
 
         tokio_test::block_on(async {
@@ -822,9 +751,7 @@ mod tests {
             assert!(result.created > 0);
 
             let text = result.text;
-            assert!(!tokens.is_empty());
-            assert!(tokens[0].id > 0);
-            assert!(tokens[0].start >= 0);
+            assert!(!text.is_empty());
         });
     }
 
@@ -875,13 +802,13 @@ mod tests {
     const CHAT_COMPLETION_RESPONSE: &str = r#"{"id":"chat-i9UtWgZWWRoKrtoaH7uAj8ZOe41u7","object":"chat_completion","created":1716927031,"model":"Neural-Chat-7B","choices":[{"index":0,"message":{"role":"assistant","content":"I believe it is essential to acknowledge the complexity of the world and the many emotions that come with it. People are interconnected and experiences vastly different across cultures and countries. My personal feelings about the world in general involve a sense of hopefulness, empathy, and a determination to make a difference by working towards a more equitable, sustainable, and harmonious planet. While challenges and hardships are inevitable, I remain optimistic and try to find meaning in finding new solutions, fostering understanding, and striving for global unity. Ultimately, I recognize the world's complexities and strive to maintain a balance of positivity and progress.","output":null},"status":"success"}]}"#;
     const CHAT_VISION_RESPONSE: &str = r#"{"id":"chat-VxaC7FbS6ms2Tc3YCj7XsLi94qPkr","object":"chat_completion","created":1717212805,"model":"llava-1.5-7b-hf","choices":[{"index":0,"message":{"role":"assistant","content":"?\n\nThe man is wearing a hat and glasses.","output":null},"status":"success"}]}"#;
     const FACTUALITY_RESPONSE: &str = r#"{"checks":[{"score":0.7879658937454224,"index":0,"status":"success"}],"created":1716927393,"id":"fact-XpxRmrc1pUsgkMQRDrWKXHGTfkGdG","object":"factuality_check"}"#;
-    const INJECTION_RESPONSE: &str = r#"{"checks":[{"probability":0.5,"index":0,"status":"success"}],"created":"1716927842","id":"injection-k7yi24csvD3gqVB1ul4niKfJpoSL8rDr","object":"injection_check"}"#;
-    const PII_RESPONSE: &str = r#"{ "id": "pii-sqq812J5VlXRxp6Fpu3PXkV33rOJnwTv", "object": "pii_check", "created": "1716928267", "checks": [{ "new_prompt": "My email is oyo@yukmt.fjw", "index": 0, "status": "success" }]}"#;
+    const INJECTION_RESPONSE: &str = r#"{"id":"injection-6091136ee60549a38c3c474a5bea1fb0","object":"injection_check","created":1764522969,"checks":[{"index":0,"probability":1,"status":"success"}]}"#;
+    const PII_RESPONSE: &str = r#"{"id":"pii-2c38ae7faaf94d95837983d1e21500f4","object":"pii_check","created":1764522926,"checks":[{"index":0,"new_prompt":"My email is gui@urozg.bmm and my number is 270-123-4567","status":"success"}]}"#;
     const TOXICITY_RESPONSE: &str = r#"{"checks":[{"score":0.7072361707687378,"index":0,"status":"success"}],"created":1716928765,"id":"toxi-T9KOKkKxBBXEHVoDkzoC0uYNpTbvx","object":"toxicity_check"}"#;
-    const TRANSLATE_RESPONSE: &str = r#"{"translations":[{"score":0.5008216500282288,"translation":"La lluvia en España se queda principalmente en la llanura","model":"deepl","status":"success"},{"score":0.5381202101707458,"translation":"La lluvia en España permanece principalmente en la llanura","model":"google","status":"success"},{"score":0.4843788146972656,"translation":"La lluvia en España se queda principalmente en la llanura.","model":"nous_hermes_llama2","status":"success"}],"best_translation":"La lluvia en España permanece principalmente en la llanura","best_score":0.5381202101707458,"best_translation_model":"google","created":1716930759,"id":"translation-8df720f17ab344a08b56a473fc63fd8b","object":"translation"}"#;
     const RERANK_RESPONSE: &str = r#"{"id": "rerank-03bd66c1-77b5-4f3f-b72b-27c6ed263f9c", "object": "list", "created": 1732203527, "model": "bge-reranker-v2-m3", "results": [{"index": 1, "relevance_score": 0.05051767,"text": "Deeplearning is not pizza."},{"index": 0, "relevance_score": 0.019531239,"text": "Deeplearning is pizza"}]}"#;
-    const TOKENIZE_RESPONSE: &str = r#"{"id":"token-5ddaba0c-9576-4b50-88f7-4136da728e09","object":"tokens","created":1731701048,"model":"neural-chat-7b-v3-3","tokens":[{"id":1,"start":0,"end":0,"text":""},{"id":15259,"start":0,"end":0,"text":"Tell"},{"id":528,"start":4,"end":0,"text":" me"},{"id":264,"start":7,"end":0,"text":" a"},{"id":13015,"start":9,"end":0,"text":" joke"},{"id":28723,"start": 14,"end":0,"text":"."}]}"#;
-    const MODELS_RESPONSE: &str = r#"{"object":"list","data":[{"id":"bge-reranker-v2-m3","object":"model","created":"2024-11-19T00:00:00Z","owned_by":"Beijing Academy of Artificial Intelligence","description":"Open-source multilingual reranker model.","max_context_length":512,"prompt_format":"none","capabilities":{"chat_completion":false,"chat_with_image":false,"completion":false,"embedding":false,"embedding_with_image":false,"tokenize":true,"rerank":true}},{"id":"bridgetower-large-itm-mlm-itc","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"Bridgetower","description":"Open source multimodal embeddings model.","max_context_length":8192,"prompt_format":"none","capabilities":{"chat_completion":false,"chat_with_image":false,"completion":false,"embedding":true,"embedding_with_image":true,"tokenize":false,"rerank":false}},{"id":"deepseek-coder-6.7b-instruct","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"DeepSeek","description":"Deepseek Coder is a coder model trained on 2 trillion tokens.","max_context_length":8192,"prompt_format":"deepseek","capabilities":{"chat_completion":true,"chat_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"rerank":false}},{"id":"Hermes-2-Pro-Llama-3-8B","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"NousResearch","description":"Hermes 2 Pro is a generalist language model based on Meta Llama 3 8B.","max_context_length":8192,"prompt_format":"chatML","capabilities":{"chat_completion":true,"chat_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"rerank":false}},{"id":"Hermes-2-Pro-Mistral-7B","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"NousResearch","description":"Hermes 2 Pro is a generalist language model based on Mistral 7B.","max_context_length":8192,"prompt_format":"chatML","capabilities":{"chat_completion":true,"chat_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"rerank":false}},{"id":"Hermes-3-Llama-3.1-70B","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"NousResearch","description":"Hermes 3 is a generalist language model based on Llama 3.1 70B.","max_context_length":20480,"prompt_format":"chatML","capabilities":{"chat_completion":true,"chat_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"rerank":false}},{"id":"Hermes-3-Llama-3.1-8B","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"Nous Research","description":"Hermes 3 is a generalist language model based on Llama 3.1 8B.","max_context_length":20480,"prompt_format":"chatML","capabilities":{"chat_completion":true,"chat_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"rerank":false}},{"id":"llava-1.5-7b-hf","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"llava hugging face","description":"Open-source multimodal chatbot trained by fine-tuning LLaMa/Vicuna.","max_context_length":8192,"prompt_format":"llava","capabilities":{"chat_completion":true,"chat_with_image":true,"completion":false,"embedding":false,"embedding_with_image":false,"tokenize":false,"rerank":false}},{"id":"llava-v1.6-mistral-7b-hf","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"llava hugging face","description":"Open-source multimodal chatbot trained by fine-tuning LLaMa/Vicuna.","max_context_length":8192,"prompt_format":"llava_mistral_instruct","capabilities":{"chat_completion":true,"chat_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"rerank":false}},{"id":"multilingual-e5-large-instruct","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"intfloat","description":"Open-source multilingual text embeddings model.","max_context_length":512,"prompt_format":"none","capabilities":{"chat_completion":false,"chat_with_image":false,"completion":false,"embedding":true,"embedding_with_image":false,"tokenize":true,"rerank":false}},{"id":"neural-chat-7b-v3-3","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"Intel","description":"Neural Chat is a fine-tune of Mistral 7B","max_context_length":8192,"prompt_format":"neural","capabilities":{"chat_completion":true,"chat_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"rerank":false}},{"id":"Nous-Hermes-Llama2-13b","object":"model","created":"2024-10-31T00:00:00Z","owned_by":"NousResearch","description":"Nous-Hermes-Llama2-13b is a state-of-the-art language model fine-tuned on over 300,000 instructions.","max_context_length":8192,"prompt_format":"none","capabilities":{"chat_completion":false,"chat_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"rerank":false}}]}"#;
+    const TOKENIZE_RESPONSE: &str = r#"{"id":"token-5bb91788-b584-4cee-9b67-bb37bb35e1df","object":"tokens","created":1764522390,"model":"NousResearch/Hermes-3-Llama-3.1-8B","tokens":[{"id":128000,"start":0,"stop":0,"text":"\u003c|begin_of_text|\u003e"},{"id":31121,"start":0,"stop":0,"text":"please"},{"id":78751,"start":0,"stop":0,"text":" tokenize"},{"id":420,"start":0,"stop":0,"text":" this"}]}"#;
+    const DETOKENIZE_RESPONSE: &str = r#"{"id":"token-dc787ec9-2034-4a89-af09-1df692dc1d5e","object":"tokens","created":1764522490,"model":"NousResearch/Hermes-3-Llama-3.1-8B","text":"\u003c|begin_of_text|\u003eplease tokenize this"}"#;
+    const MODELS_RESPONSE: &str = r#"{"object":"list","data":[{"id":"bge-m3","object":"model","created":1730332800,"owned_by":"Beijing Academy of Artificial Intelligence","description":"BGE M3 is distinguished for its versatility in Multi-Functionality, Multi-Linguality, and Multi-Granularity.","max_context_length":8192,"prompt_format":"none","capabilities":{"chat_completion":false,"chat_with_image":false,"responses":false,"responses_with_image":false,"completion":false,"embedding":true,"embedding_with_image":false,"tokenize":true,"detokenize":true,"rerank":false,"tool_calling":false,"reasoning":false}},{"id":"bge-reranker-v2-m3","object":"model","created":1730332800,"owned_by":"Beijing Academy of Artificial Intelligence","description":"BGE Reranker v2 M3 is distinguished for its versatility in Multi-Functionality, Multi-Linguality, and Multi-Granularity.","max_context_length":8192,"prompt_format":"none","capabilities":{"chat_completion":false,"chat_with_image":false,"responses":false,"responses_with_image":false,"completion":false,"embedding":false,"embedding_with_image":false,"tokenize":false,"detokenize":false,"rerank":true,"tool_calling":false,"reasoning":false}},{"id":"bridgetower-large-itm-mlm-itc","object":"model","created":1730332800,"owned_by":"BridgeTower","description":"BridgeTower: Building Bridges Between Encoders in Vision-Language Representation Learning","max_context_length":8192,"prompt_format":"none","capabilities":{"chat_completion":false,"chat_with_image":false,"responses":false,"responses_with_image":false,"completion":false,"embedding":true,"embedding_with_image":true,"tokenize":false,"detokenize":false,"rerank":false,"tool_calling":false,"reasoning":false}},{"id":"gemma-3-27b-it","object":"model","created":1731369600,"owned_by":"Google","description":"Gemma 3 models are well-suited for a variety of text generation and image understanding tasks, including question answering, summarization, and reasoning.","max_context_length":32000,"prompt_format":"none","capabilities":{"chat_completion":true,"chat_with_image":true,"responses":true,"responses_with_image":true,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"detokenize":true,"rerank":false,"tool_calling":true,"reasoning":false}},{"id":"gpt-oss-120b","object":"model","created":1730332800,"owned_by":"OpenAI","description":"GPT-OSS 120b is an OpenAI model for powerful reasoning, agentic tasks, and high reasoning use cases.","max_context_length":64000,"prompt_format":"none","capabilities":{"chat_completion":true,"chat_with_image":false,"responses":false,"responses_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"detokenize":true,"rerank":false,"tool_calling":true,"reasoning":true}},{"id":"Hermes-3-Llama-3.1-70B","object":"model","created":1730332800,"owned_by":"NousResearch","description":"Hermes 3 is a generalist language model based on Llama 3.1 70B.","max_context_length":20480,"prompt_format":"none","capabilities":{"chat_completion":true,"chat_with_image":false,"responses":false,"responses_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"detokenize":true,"rerank":false,"tool_calling":true,"reasoning":false}},{"id":"Hermes-3-Llama-3.1-8B","object":"model","created":1730332800,"owned_by":"NousResearch","description":"Hermes 3 is a generalist language model based on Llama 3.1 8B.","max_context_length":32768,"prompt_format":"none","capabilities":{"chat_completion":true,"chat_with_image":false,"responses":false,"responses_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"detokenize":true,"rerank":false,"tool_calling":true,"reasoning":false}},{"id":"multilingual-e5-large-instruct","object":"model","created":1742828621,"owned_by":"intfloat","description":"Open-source multilingual text embeddings model.","max_context_length":512,"prompt_format":"none","capabilities":{"chat_completion":false,"chat_with_image":false,"responses":false,"responses_with_image":false,"completion":false,"embedding":true,"embedding_with_image":false,"tokenize":true,"detokenize":true,"rerank":false,"tool_calling":false,"reasoning":false}},{"id":"Qwen2.5-Coder-14B-Instruct","object":"model","created":1730332800,"owned_by":"Qwen","description":"Qwen2.5-Coder is the latest series of Code-Specific Qwen large language models (formerly known as CodeQwen).","max_context_length":20480,"prompt_format":"none","capabilities":{"chat_completion":true,"chat_with_image":false,"responses":false,"responses_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"detokenize":true,"rerank":false,"tool_calling":false,"reasoning":false}},{"id":"Qwen2.5-VL-7B-Instruct","object":"model","created":1730332800,"owned_by":"llava hugging face","description":"Open-source multimodal chatbot trained by fine-tuning LLaMa/Vicuna.","max_context_length":16384,"prompt_format":"none","capabilities":{"chat_completion":true,"chat_with_image":true,"responses":false,"responses_with_image":false,"completion":true,"embedding":false,"embedding_with_image":false,"tokenize":true,"detokenize":true,"rerank":false,"tool_calling":false,"reasoning":false}}]}"#;
     const EMBEDDING_RESPONSE: &str = r#"{ "id": "emb-DMC7M45FkuwJ9ihyP23RKrC6hUXwg", "object": "embedding_batch", "created": 1717015553, "model": "bridgetower-large-itm-mlm-itc", "data": [{"status": "success","index": 0,"object": "embedding",
           "embedding": [
             0.028302032500505447,

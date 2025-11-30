@@ -11,6 +11,7 @@ pub struct RequestInput {
     block_prompt_injection: bool,
     pii: Option<pii::InputMethod>,
     pii_replace_method: Option<pii::ReplaceMethod>,
+    entity_list: Option<Vec<String>>,
 }
 
 /// Allows for checking the output of the request for factuality and toxicity.

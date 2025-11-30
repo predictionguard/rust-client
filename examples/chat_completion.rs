@@ -22,7 +22,7 @@ async fn main() {
             chat::Roles::User,
             "How do you feel about the world in general?".to_string(),
         )
-        .max_tokens(1000)
+        .max_completion_tokens(1000)
         .temperature(0.1)
         .top_p(0.1)
         .top_k(50);
