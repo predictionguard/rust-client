@@ -10,6 +10,7 @@ use crate::{
 use dotenvy;
 use eventsource_client::Client as EventClient;
 use eventsource_client::SSE;
+use launchdarkly_sdk_transport::HyperTransport;
 use futures::TryStreamExt;
 use log::error;
 use reqwest::{
@@ -315,12 +316,14 @@ impl Client {
 
         let key = format!("Bearer {}", &self.inner.api_key);
 
+        let transport = HyperTransport::builder().build_https()?;
+
         let client = eventsource_client::ClientBuilder::for_url(&url)?
             .header("User-Agent", user_agent.as_str())?
             .header("Authorization", &key)?
             .method("POST".to_string())
             .body(body)
-            .build();
+            .build_with_transport(transport);
 
         let mut stream = Box::pin(client.stream());
 
@@ -328,6 +331,7 @@ impl Client {
             match stream.try_next().await {
                 Ok(Some(event)) => {
                     match event {
+                        SSE::Connected(_) => continue,
                         SSE::Comment(_) => continue,
                         SSE::Event(evt) => {
                             // Check for [DONE]
@@ -363,7 +367,7 @@ impl Client {
 
                 Ok(None) => continue,
                 Err(e) => match e {
-                    eventsource_client::Error::StreamClosed => break,
+                    eventsource_client::Error::Eof => break,
                     _ => return Err(stream_error_into_api_err(e).await),
                 },
             }
@@ -404,12 +408,14 @@ impl Client {
 
         let key = format!("Bearer {}", &self.inner.api_key);
 
+        let transport = HyperTransport::builder().build_https()?;
+
         let client = eventsource_client::ClientBuilder::for_url(&url)?
             .header("User-Agent", user_agent.as_str())?
             .header("Authorization", &key)?
             .method("POST".to_string())
             .body(body)
-            .build();
+            .build_with_transport(transport);
 
         let mut stream = Box::pin(client.stream());
 
@@ -417,6 +423,7 @@ impl Client {
             match stream.try_next().await {
                 Ok(Some(event)) => {
                     match event {
+                        SSE::Connected(_) => continue,
                         SSE::Comment(_) => continue,
                         SSE::Event(evt) => {
                             // Check for [DONE]
@@ -460,7 +467,7 @@ impl Client {
 
                 Ok(None) => continue,
                 Err(e) => match e {
-                    eventsource_client::Error::StreamClosed => break,
+                    eventsource_client::Error::Eof => break,
                     _ => return Err(stream_error_into_api_err(e).await),
                 },
             }

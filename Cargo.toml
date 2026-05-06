@@ -1,6 +1,6 @@
 [package]
 name = "prediction-guard"
-version = "0.14.1"
+version = "0.15.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Ed Gonzalez <ed.gonzalez@predictionguard.com>", "Jacob Mansdorfer <jacob@predictionguard.com>"]
@@ -16,7 +16,8 @@ keywords = ["prediction", "guard"]
 built = "0.8"
 
 [dependencies]
-eventsource-client = "0.17"
+eventsource-client = { version = "0.17", features = ["hyper-rustls-native-roots"] }
+launchdarkly-sdk-transport = { version = "0.1", features = ["hyper-rustls-native-roots"] }
 reqwest = { version = "0.13", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["std"] }
