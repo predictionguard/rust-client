@@ -1,5 +1,11 @@
 //! Prediction Guard api client. Used to communicate with Prediction Guard API.
 //!
+//! **Deprecated:** this crate is no longer maintained. Some features are broken
+//! or missing, and no further updates will be released. Use an OpenAI-compatible
+//! or Anthropic-compatible client pointed at the Prediction Guard API instead.
+//! See the [README](https://github.com/predictionguard/rust-client#readme) for
+//! migration details.
+//!
 //! You must have an API key to use the client. Once you have your API key you create
 //! an instance of [`client::Client`]. This will allow access to all the endpoints.
 //!
@@ -50,6 +56,7 @@ pub mod models;
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 #[cfg(test)]
+#[allow(deprecated)]
 mod tests {
     use std::io::Write;
 
