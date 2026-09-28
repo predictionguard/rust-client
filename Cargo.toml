@@ -1,16 +1,19 @@
 [package]
 name = "prediction-guard"
-version = "0.15.0"
+version = "0.16.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Ed Gonzalez <ed.gonzalez@predictionguard.com>", "Jacob Mansdorfer <jacob@predictionguard.com>"]
-description = "SDK for the Prediction Guard API"
+description = "[DEPRECATED] SDK for the Prediction Guard API. No longer maintained; use an OpenAI- or Anthropic-compatible client instead."
 homepage = "https://docs.predictionguard.com/home/getting-started/welcome"
 repository = "https://github.com/predictionguard/rust-client"
 readme = "README.md"
 documentation = "https://docs.rs/prediction-guard/latest/"
 categories = ["api-bindings"]
 keywords = ["prediction", "guard"]
+
+[badges]
+maintenance = { status = "deprecated" }
 
 [build-dependencies]
 built = "0.8"

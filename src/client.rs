@@ -1,4 +1,6 @@
 //! Used to connect to the Prediction Guard API.
+// `Client` is deprecated for downstream users; silence the lint for its own implementation.
+#![allow(deprecated)]
 use std::{env, fmt, sync::Arc, time::Duration};
 
 use crate::built_info;
@@ -69,6 +71,10 @@ impl PgEnvironment {
 
 /// Handles the connectivity to the Prediction Guard API. It is safe to be
 /// used across threads.
+#[deprecated(
+    since = "0.16.0",
+    note = "The prediction-guard crate is deprecated and no longer maintained. Use an OpenAI-compatible or Anthropic-compatible client pointed at the Prediction Guard API instead. See https://github.com/predictionguard/rust-client#readme"
+)]
 #[derive(Debug, Clone)]
 pub struct Client {
     inner: Arc<ClientInner>,

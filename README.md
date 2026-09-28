@@ -1,77 +1,59 @@
 ## Prediction Guard Rust Client
 
-[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/Cy6tWW4wpE69Ftb8vdTAN9/NrVgbqg2cCEGyBjGRJcNhf/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/Cy6tWW4wpE69Ftb8vdTAN9/NrVgbqg2cCEGyBjGRJcNhf/tree/main)
 [![crates.io](https://img.shields.io/crates/v/prediction-guard.svg)](https://crates.io/crates/prediction-guard)
 
-### Description
+> [!WARNING]
+> **This crate is deprecated and no longer maintained.** Some features are broken or missing, and no further updates will be released. Existing versions remain available on crates.io, but you should migrate to an OpenAI-compatible or Anthropic-compatible client as described below.
 
-This crate provides functionality developed to simplify interfacing
-with [Prediction Guard API](https://www.predictionguard.com/) in Rust.
+### Migrating
 
-### Requirements
+The Prediction Guard API is compatible with both OpenAI-style and Anthropic-style clients. Use whichever matches the functionality you need, pointed at the Prediction Guard API with your existing API key.
 
-To access the API, contact us [here](https://predictionguard.com/get-started) to get an enterprise access token.
-You will need this access token to continue.
+#### OpenAI-compatible (`async-openai`)
 
-### Usage
+```toml
+[dependencies]
+async-openai = { version = "0.42", features = ["chat-completion"] }
+tokio = { version = "1", features = ["full"] }
+```
 
 ```rust
-extern crate prediction_guard as pg_client;
-
-use pg_client::{chat, client, models};
+use async_openai::{
+    config::OpenAIConfig,
+    types::chat::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs},
+    Client,
+};
 
 #[tokio::main]
-async fn main() {
-    let clt = client::Client::new().expect("client value");
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let config = OpenAIConfig::new()
+        .with_api_base("https://api.predictionguard.com")
+        .with_api_key(std::env::var("PREDICTIONGUARD_API_KEY")?);
+    let client = Client::with_config(config);
 
-    let req = chat::Request::<chat::Message>::new("NeuralChat7B".to_string())
-        .add_message(
-            chat::Roles::User,
-            "How do you feel about the world in general?".to_string(),
-        )
-        .max_tokens(1000)
-        .temperature(0.85);
+    let request = CreateChatCompletionRequestArgs::default()
+        .model("<model-name>")
+        .messages([ChatCompletionRequestUserMessageArgs::default()
+            .content("How do you feel about the world in general?")
+            .build()?
+            .into()])
+        .max_tokens(1000u32)
+        .build()?;
 
-    let result = clt
-        .generate_chat_completion(&req)
-        .await
-        .expect("error from generate chat completion");
-
-    println!("\nchat completion response:\n\n {:?}", result);
+    let response = client.chat().create(request).await?;
+    println!("{:?}", response.choices[0].message.content);
+    Ok(())
 }
 ```
 
-Take a look at the `examples` directory for more examples.
+Enable the `async-openai` features for the endpoints you use (for example `embedding` or `completions`).
+
+#### Anthropic-compatible
+
+Any Anthropic Messages API client can be used by setting its base URL to `https://api.predictionguard.com` and its API key to your Prediction Guard API key.
 
 ### Docs
 
-You can find the Prediction Guard API docs on the Prediction Guard website.
+For the full list of endpoints and models, see the [Prediction Guard documentation](https://docs.predictionguard.com).
 
-[API Docs](https://docs.predictionguard.com/home/getting-started/welcome)
-
-[API Reference](https://docs.predictionguard.com/api-reference/api-reference/check-api-health)
-
-### Getting started
-
-Once you have your api key you can use the `makefile` to run curl commands
-for the different api endpoints. For example, `make curl-injection` will connect to
-the injection endpoint and return the injection response. The `makefile` also allows you to run the different examples
-such as `make run-injection` to run the injection example.
-
-#### Licensing
-
-```
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-```
-
-Copyright 2024 Prediction Guard
+The [API documentation for this crate](https://docs.rs/prediction-guard/latest/) remains available for reference but will not be updated.
